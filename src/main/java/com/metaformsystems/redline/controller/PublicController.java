@@ -24,7 +24,7 @@ public class PublicController {
     public ResponseEntity<Map<String, String>> info() {
         return ResponseEntity.ok(Map.of(
             "name", "Redline API",
-            "description", "Spring Boot application with Keycloak authentication"
+            "description", "UI API Server"
         ));
     }
 }

@@ -2,7 +2,6 @@ package com.metaformsystems.redline.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
+ * An organization that provides services to tenants.
  */
 @Entity
 @Table(name = "providers")
@@ -21,8 +20,7 @@ public class ServiceProvider extends VersionedEntity {
     @Column(nullable = false)
     private String name;
 
-    @OneToMany
-    @JoinColumn(name = "service_provider_id")
+    @OneToMany(mappedBy = "serviceProvider")
     private Set<Tenant> tenants = new HashSet<>();
 
     public String getName() {

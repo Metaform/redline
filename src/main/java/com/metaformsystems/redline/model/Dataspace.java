@@ -2,8 +2,13 @@ package com.metaformsystems.redline.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -16,8 +21,9 @@ public class Dataspace extends VersionedEntity {
     @Column(nullable = false)
     private String name;
 
-    private String profileId;
-
+    @OneToMany
+    @JoinColumn(name = "dataspace_id")
+    private Set<DataspaceProfile> profiles = new HashSet<>();
 
     public String getName() {
         return name;
@@ -27,11 +33,11 @@ public class Dataspace extends VersionedEntity {
         this.name = name;
     }
 
-    public String getProfileId() {
-        return profileId;
+    public Set<DataspaceProfile> getProfiles() {
+        return profiles;
     }
 
-    public void setProfileId(String profileId) {
-        this.profileId = profileId;
+    public void setProfiles(Set<DataspaceProfile> profiles) {
+        this.profiles = profiles;
     }
 }
