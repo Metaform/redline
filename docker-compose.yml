@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: redline-postgres
+    environment:
+      POSTGRES_DB: redlinedb
+      POSTGRES_USER: redline
+      POSTGRES_PASSWORD: redline
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - redline-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: redline-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: redline
+      KC_DB_PASSWORD: redline
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+    command:
+      - start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - redline-network
+
+volumes:
+  postgres_data:
+
+networks:
+  redline-network:
+    driver: bridge
