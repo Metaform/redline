@@ -123,17 +123,6 @@ The application will start on port 8081.
 - `GET /api/public/health` - Health check
 - `GET /api/public/info` - Application info
 
-### Protected Endpoints (Authentication Required)
-
-#### User Endpoints
-
-- `GET /api/users` - Get all users (requires USER role)
-- `GET /api/users/{id}` - Get user by ID (requires USER role)
-- `POST /api/users` - Create new user (requires ADMIN role)
-- `PUT /api/users/{id}` - Update user (requires ADMIN role)
-- `DELETE /api/users/{id}` - Delete user (requires ADMIN role)
-- `GET /api/users/me` - Get current authenticated user
-
 ## Authentication
 
 This application uses OAuth2 JWT tokens from Keycloak. To access protected endpoints:
