@@ -4,15 +4,8 @@ A Spring Boot application with REST endpoints, JPA repositories, Spring Security
 
 ## Features
 
-- Spring Boot 3.4.1
-- Java 21 (LTS)
-- Gradle build system
-- RESTful API endpoints
-- Spring Data JPA with repositories
-- Spring Security with OAuth2 Resource Server
 - Keycloak integration for authentication
 - PostgreSQL and H2 database support
-- Profile-based configuration (dev/prod)
 
 ## Prerequisites
 
@@ -20,8 +13,6 @@ A Spring Boot application with REST endpoints, JPA repositories, Spring Security
 - Gradle (or use the included wrapper - `./gradlew`)
 - PostgreSQL (for production profile)
 - Keycloak server (for authentication)
-
-**Note**: Originally requested with Java 25, but configured with Java 21 (current LTS) as Java 25 is not yet released. Java 21 is the recommended version for production use.
 
 ## Database Configuration
 
@@ -161,32 +152,6 @@ Run tests with:
 ```bash
 ./gradlew test
 ```
-
-## Project Structure
-
-```
-redline/
-├── src/
-│   ├── main/
-│   │   ├── java/com/metaformsystems/redline/
-│   │   │   ├── config/           # Configuration classes
-│   │   │   ├── controller/       # REST controllers
-│   │   │   ├── model/            # JPA entities
-│   │   │   ├── repository/       # Spring Data repositories
-│   │   │   └── RedlineApplication.java
-│   │   └── resources/
-│   │       └── application.yml   # Application configuration
-│   └── test/
-│       └── java/com/metaformsystems/redline/
-├── build.gradle
-└── settings.gradle
-```
-
-## Configuration Files
-
-- `build.gradle` - Gradle build configuration with dependencies
-- `application.yml` - Application configuration with profiles
-- `SecurityConfig.java` - Spring Security and Keycloak integration
 
 ## License
 
