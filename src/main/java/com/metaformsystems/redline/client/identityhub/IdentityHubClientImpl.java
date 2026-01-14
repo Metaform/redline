@@ -15,6 +15,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 
+import static com.nimbusds.jose.util.Base64URL.encode;
+
 @Component
 public class IdentityHubClientImpl implements IdentityHubClient {
 
@@ -53,7 +55,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public IdentityHubParticipantContext getParticipant(String participantContextId) {
         return webClient.get()
-                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}", participantContextId)
+                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(IdentityHubParticipantContext.class)
@@ -77,7 +79,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public List<VerifiableCredentialResource> queryCredentialsByType(String participantContextId, String type) {
         return webClient.get()
                 .uri(uriBuilder -> {
-                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/credentials".formatted(participantContextId));
+                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/credentials".formatted(encode(participantContextId)));
                     if (type != null) {
                         builder.queryParam("type", type);
                     }
@@ -94,7 +96,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public VerifiableCredentialResource getCredentialRequest(String participantContextId, String holderPid) {
         return webClient.get()
                 .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/credentials/request/{holderPid}",
-                        participantContextId, holderPid)
+                        encode(participantContextId), holderPid)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(VerifiableCredentialResource.class)
@@ -104,7 +106,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public void requestCredential(String participantContextId, CredentialRequestDto request) {
         webClient.post()
-                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/credentials/request", participantContextId)
+                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/credentials/request", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(request)
                 .retrieve()
@@ -128,7 +130,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public List<KeyPairResource> queryKeyPairByParticipantContextId(String participantContextId) {
         return webClient.get()
-                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/keypairs", participantContextId)
+                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/keypairs", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<KeyPairResource>>() {
@@ -140,7 +142,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public KeyPairResource getKeyPair(String participantContextId, String keyPairId) {
         return webClient.get()
                 .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/keypairs/{keyPairId}",
-                        participantContextId, keyPairId)
+                        encode(participantContextId), keyPairId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(KeyPairResource.class)
@@ -151,7 +153,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public void addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, Boolean makeDefault) {
         webClient.put()
                 .uri(uriBuilder -> {
-                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/keypairs".formatted(participantContextId));
+                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/keypairs".formatted(encode(participantContextId)));
                     if (makeDefault != null) {
                         builder.queryParam("makeDefault", makeDefault);
                     }
@@ -168,7 +170,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public void rotateKeyPair(String participantContextId, String keyPairId, KeyDescriptor keyDescriptor, Long duration) {
         webClient.post()
                 .uri(uriBuilder -> {
-                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/keypairs/%s/rotate".formatted(participantContextId, keyPairId));
+                    var builder = uriBuilder.path(IDENTITY_API_BASE + "/participants/%s/keypairs/%s/rotate".formatted(encode(participantContextId), keyPairId));
                     if (duration != null) {
                         builder.queryParam("duration", duration);
                     }
@@ -185,7 +187,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     public void revokeKeyPair(String participantContextId, String keyPairId, KeyDescriptor keyDescriptor) {
         webClient.post()
                 .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/keypairs/{keyPairId}/revoke",
-                        participantContextId, keyPairId)
+                        encode(participantContextId), keyPairId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(keyDescriptor)
                 .retrieve()
@@ -196,7 +198,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public void getDidState(String participantContextId, DidRequestPayload payload) {
         webClient.post()
-                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/dids/state", participantContextId)
+                .uri(IDENTITY_API_BASE + "/participants/{participantContextId}/dids/state", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(payload)
                 .retrieve()
@@ -212,7 +214,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with context id: " + participantContextId));
 
-        var token = tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
+        var token = tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "identity-api:write identity-api:read");
         return token;
     }
 }
