@@ -7,6 +7,7 @@ import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1Par
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantResource;
+import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.dao.VPAResource;
 import com.metaformsystems.redline.model.ClientCredentials;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -55,7 +57,7 @@ public class TenantService {
     }
 
     @Transactional
-    TenantResource getTenant(Long id) {
+    public TenantResource getTenant(Long id) {
         return tenantRepository.findById(id)
                 .map(this::toTenantResource)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
@@ -74,9 +76,11 @@ public class TenantService {
         participant.setTenant(tenant);
 
         // FIXME for now, register in all dataspaces. This should be changed to support tenant registration in specific dataspaces.
-        var dataspaces = registration.dataspaces().stream().map(dataspaceId -> {
+        var dataspaces = registration.dataspaceInfos().stream().map(i -> {
             var info = new DataspaceInfo();
-            info.setDataspaceId(dataspaceId);
+            info.setRoles(i.getRoles());
+            info.setAgreementTypes(i.getAgreementTypes());
+            info.setDataspaceId(i.getDataspaceId());
             return info;
         }).collect(toSet());
 
@@ -105,7 +109,7 @@ public class TenantService {
 
         // invoke CFM to deploy the ParticipantProfile and update the internal Participant entity with correlation id, identifier, and VPAs
         var tmProfile = tenantManagerClient.createParticipantProfile(tenant.getCorrelationId(), new V1Alpha1ParticipantProfile(
-                UUID.randomUUID().toString(), 0L, deployment.webDid(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
+                UUID.randomUUID().toString(), 0L, deployment.identifier(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
         ));
         participant.setCorrelationId(tmProfile.id());
         participant.setIdentifier(tmProfile.identifier());
@@ -168,6 +172,16 @@ public class TenantService {
 
     }
 
+    @Transactional
+    public List<PartnerReferenceResource> getPartnerReferences(Long participantId, Long dataspacesId) {
+        return participantRepository.findById(participantId).stream()
+                .flatMap(p -> p.getDataspaceInfos().stream())
+                .filter(i -> i.getDataspaceId().equals(dataspacesId))
+                .flatMap(i -> i.getPartners().stream())
+                .map(r -> new PartnerReferenceResource(r.identifier(), r.nickname()))
+                .toList();
+    }
+
     @NonNull
     private ParticipantResource toParticipantResource(Participant saved) {
         var vpas = saved.getAgents().stream().map(vpa -> new VPAResource(vpa.getId(),
@@ -187,7 +201,7 @@ public class TenantService {
     private TenantResource toTenantResource(Tenant t) {
         var participants = t.getParticipants().stream()
                 .map(this::toParticipantResource).toList();
-        return new TenantResource(t.getId(), t.getName(), participants);
+        return new TenantResource(t.getId(), t.getServiceProvider().getId(), t.getName(), participants);
     }
 
 

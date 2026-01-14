@@ -5,6 +5,7 @@ import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewServiceProvider;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantResource;
+import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.ServiceProviderResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.service.ServiceProviderService;
@@ -52,10 +53,11 @@ public class RedlineController {
         return ResponseEntity.ok(saved);
     }
 
-    @PostMapping("service-providers/{id}/registrations")
+    @PostMapping("service-providers/{providerId}/tenants")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<TenantResource> createRegistration(@PathVariable Long id, @RequestBody NewTenantRegistration registration) {
-        var tenant = tenantService.registerTenant(id, registration);
+    public ResponseEntity<TenantResource> registerTenant(@PathVariable Long providerId,
+                                                         @RequestBody NewTenantRegistration registration) {
+        var tenant = tenantService.registerTenant(providerId, registration);
         return ResponseEntity.ok(tenant);
     }
 
@@ -64,6 +66,35 @@ public class RedlineController {
     public ResponseEntity<ParticipantResource> deployParticipant(@RequestBody NewParticipantDeployment deployment) {
         var participant = tenantService.deployParticipant(deployment);
         return ResponseEntity.ok(participant);
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}")
+//    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<TenantResource> getTenant(@RequestBody Long providerId, @RequestBody Long tenantId) {
+        var tenantResource = tenantService.getTenant(tenantId);
+        // TODO auth check for provider access
+        return ResponseEntity.ok(tenantResource);
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/participantId")
+//    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ParticipantResource> getParticipant(@RequestBody Long providerId,
+                                                              @RequestBody Long tenantId,
+                                                              @RequestBody Long participantId) {
+        var participantResource = tenantService.getParticipant(participantId);
+        // TODO auth check for provider access
+        return ResponseEntity.ok(participantResource);
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/participantId/partners/{dataspaceId}")
+//    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<PartnerReferenceResource>> getPartners(@RequestBody Long providerId,
+                                                                      @RequestBody Long tenantId,
+                                                                      @RequestBody Long participantId,
+                                                                      @RequestBody Long dataspaceId) {
+        var references = tenantService.getPartnerReferences(participantId, dataspaceId);
+        // TODO auth check for provider access
+        return ResponseEntity.ok(references);
     }
 
 }

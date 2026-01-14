@@ -1,11 +1,13 @@
 package com.metaformsystems.redline.service;
 
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
+import com.metaformsystems.redline.dao.NewDataspaceInfo;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.VPAResource;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.Participant;
+import com.metaformsystems.redline.model.PartnerReference;
 import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.model.Tenant;
 import com.metaformsystems.redline.repository.DataspaceRepository;
@@ -25,6 +27,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -92,7 +95,8 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldRegisterTenant() {
         // Arrange
-        var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
 
         // Act
         var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
@@ -114,7 +118,8 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldDeployParticipant() {
         // Arrange
-        var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().iterator().next();
 
@@ -194,7 +199,8 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetParticipant() {
         // Arrange
-        var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().iterator().next();
 
@@ -209,7 +215,8 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetTenant() {
         // Arrange
-        var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
 
         // Act
@@ -225,7 +232,8 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldDeployParticipantWithExistingTenantCorrelationId() {
         // Arrange
-        var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
         var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
         var tenant = tenantRepository.findById(tenantResource.id()).orElseThrow();
         tenant.setCorrelationId("existing-tenant-id");
@@ -392,5 +400,31 @@ class TenantServiceIntegrationTest {
         mockWebServer.enqueue(new MockResponse().setBody(response).addHeader("Content-Type", "application/json").setResponseCode(404));
 
         assertThat(tenantService.getClientCredentials("test-participant-context-id")).isNull();
+    }
+
+    @Test
+    void shouldGetPartnerReferences() {
+        // Arrange
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("Test Tenant", infos);
+        var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var participantId = tenant.participants().iterator().next().id();
+
+        // Add partners to the participant's dataspace info
+        var participant = participantRepository.findById(participantId).orElseThrow();
+        var dataspaceInfo = participant.getDataspaceInfos().iterator().next();
+        var references = new ArrayList<PartnerReference>();
+        references.add(new PartnerReference("did:web:partner1.com", "Partner One"));
+        references.add(new PartnerReference("did:web:partner2.com", "Partner Two"));
+        dataspaceInfo.setPartners(references);
+        participantRepository.save(participant);
+
+        // Act
+        var result = tenantService.getPartnerReferences(participantId, dataspace.getId());
+
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") && ref.nickname().equals("Partner One"));
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") && ref.nickname().equals("Partner Two"));
     }
 }
