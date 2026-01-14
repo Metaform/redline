@@ -108,8 +108,7 @@ public class TenantService {
             tenant.setCorrelationId(tmTenant.id());
         }
 
-        // invoke CFM and update Participant entity with correlation id, identifier, and VPAs
-
+        // invoke CFM to deploy the ParticipantProfile and update the internal Participant entity with correlation id, identifier, and VPAs
         var tmProfile = tenantManagerClient.createParticipantProfile(tenant.getCorrelationId(), new V1Alpha1ParticipantProfile(
                 UUID.randomUUID().toString(), 0L, deployment.webDid(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
         ));
@@ -123,7 +122,7 @@ public class TenantService {
         return toParticipantResource(saved);
     }
 
-    // not transactional, no database interaction
+    @Transactional
     public String getParticipantContextId(String tenantCorrelationId, String participantCorrelationId) {
         var props = tenantManagerClient.getParticipantProfile(tenantCorrelationId, participantCorrelationId).properties();
 
@@ -131,7 +130,14 @@ public class TenantService {
             var credentialRequestUrl = stateMap.get("credentialRequestUrl");
             var holderPid = stateMap.get("holderPid");
             var participantContextId = stateMap.get("participantContextId");
-            return participantContextId != null ? participantContextId.toString() : null;
+
+            // update internal participant entity
+            var participant = participantRepository.findByCorrelationId(participantCorrelationId)
+                    .orElseThrow(() -> new IllegalArgumentException("Participant not found with correlation id: " + participantCorrelationId));
+
+            participant.setParticipantContextId(participantContextId.toString());
+
+            return participantContextId.toString();
         }
         return null;
     }
@@ -148,7 +154,14 @@ public class TenantService {
         if (!StringUtils.hasText(secret)) {
             return null;
         }
-        return new ClientCredentials(participantContextId, secret);
+        //todo: store credentials somewhere safer!
+        var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with participantContextId id: " + participantContextId));
+
+        var clientCredentials = new ClientCredentials(participantContextId, secret);
+        participantProfile.setClientCredentials(clientCredentials);
+
+        return clientCredentials;
     }
 
     @Transactional

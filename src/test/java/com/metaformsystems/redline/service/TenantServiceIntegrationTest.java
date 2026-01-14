@@ -5,6 +5,7 @@ import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.VPAResource;
 import com.metaformsystems.redline.model.Dataspace;
+import com.metaformsystems.redline.model.ParticipantProfile;
 import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ParticipantRepository;
@@ -284,6 +285,9 @@ class TenantServiceIntegrationTest {
         var participantId = "participant-456";
         var expectedContextId = "ctx-789";
 
+        var entity = new ParticipantProfile();
+        entity.setCorrelationId(participantId);
+        participantRepository.save(entity);
         mockWebServer.enqueue(new MockResponse()
                 .setBody("""
                         {
@@ -357,10 +361,15 @@ class TenantServiceIntegrationTest {
 
         mockWebServer.enqueue(new MockResponse().setBody(vaultResponse).addHeader("Content-Type", "application/json"));
 
+        var entity = new ParticipantProfile();
+        entity.setParticipantContextId("test-participant-context-id");
+        entity = participantRepository.save(entity);
+
         var creds = tenantService.getClientCredentials("test-participant-context-id");
         assertThat(creds).isNotNull();
         assertThat(creds.clientId()).isEqualTo("test-participant-context-id");
         assertThat(creds.clientSecret()).isEqualTo("0b1dbc7e87fc60080f8cd409e475a0b1ac018079eab17491ff87a5c383f9d802");
+        assertThat(participantRepository.findById(entity.getId()).orElseThrow().getClientCredentials()).isNotNull();
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.metaformsystems.redline.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -37,6 +38,9 @@ public class ParticipantProfile extends VersionedEntity {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "participant_id")
     private Set<VirtualParticipantAgent> agents = new HashSet<>();
+    private String participantContextId;
+    @Embedded
+    private ClientCredentials clientCredentials;
 
     public String getIdentifier() {
         return identifier;
@@ -76,5 +80,21 @@ public class ParticipantProfile extends VersionedEntity {
 
     public void setAgents(Set<VirtualParticipantAgent> agents) {
         this.agents = agents;
+    }
+
+    public String getParticipantContextId() {
+        return participantContextId;
+    }
+
+    public void setParticipantContextId(String participantContextId) {
+        this.participantContextId = participantContextId;
+    }
+
+    public ClientCredentials getClientCredentials() {
+        return clientCredentials;
+    }
+
+    public void setClientCredentials(ClientCredentials clientCredentials) {
+        this.clientCredentials = clientCredentials;
     }
 }
