@@ -287,7 +287,7 @@ class TenantServiceIntegrationTest {
 
         var entity = new ParticipantProfile();
         entity.setCorrelationId(participantId);
-        participantRepository.save(entity);
+        entity = participantRepository.save(entity);
         mockWebServer.enqueue(new MockResponse()
                 .setBody("""
                         {
@@ -304,7 +304,7 @@ class TenantServiceIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         // Act
-        var result = tenantService.getParticipantContextId(tenantId, participantId);
+        var result = tenantService.getParticipantContextId(entity.getId());
 
         // Assert
         assertThat(result).isEqualTo(expectedContextId);
@@ -316,7 +316,9 @@ class TenantServiceIntegrationTest {
         var tenantId = "tenant-123";
         var participantId = "participant-456";
         var expectedContextId = "ctx-789";
-
+        var entity = new ParticipantProfile();
+        entity.setCorrelationId(participantId);
+        entity = participantRepository.save(entity);
         mockWebServer.enqueue(new MockResponse()
                 .setBody("""
                         {
@@ -326,7 +328,7 @@ class TenantServiceIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         // Act
-        var result = tenantService.getParticipantContextId(tenantId, participantId);
+        var result = tenantService.getParticipantContextId(entity.getId());
 
         // Assert
         assertThat(result).isNull();

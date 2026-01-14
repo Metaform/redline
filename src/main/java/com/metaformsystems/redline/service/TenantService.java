@@ -115,7 +115,8 @@ public class TenantService {
         participant.setCorrelationId(tmProfile.id());
         participant.setIdentifier(tmProfile.identifier());
 
-        participant.setAgents(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
+        participant.getAgents().clear();
+        participant.getAgents().addAll(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
 
         // wait for participants to be ready
         var saved = participantRepository.save(participant);
@@ -123,8 +124,11 @@ public class TenantService {
     }
 
     @Transactional
-    public String getParticipantContextId(String tenantCorrelationId, String participantCorrelationId) {
-        var props = tenantManagerClient.getParticipantProfile(tenantCorrelationId, participantCorrelationId).properties();
+    public String getParticipantContextId(Long participantId) {
+        var participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        var participantCorrelationId = participant.getCorrelationId();
+        var props = tenantManagerClient.getParticipantProfile(participant.getTenant().getCorrelationId(), participantCorrelationId).properties();
 
         if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
             var credentialRequestUrl = stateMap.get("credentialRequestUrl");
@@ -132,9 +136,6 @@ public class TenantService {
             var participantContextId = stateMap.get("participantContextId");
 
             // update internal participant entity
-            var participant = participantRepository.findByCorrelationId(participantCorrelationId)
-                    .orElseThrow(() -> new IllegalArgumentException("Participant not found with correlation id: " + participantCorrelationId));
-
             participant.setParticipantContextId(participantContextId.toString());
 
             return participantContextId.toString();
@@ -146,9 +147,9 @@ public class TenantService {
      * Get the client credentials for a participant, which is necessary to access the participant's APIs in the
      * control plane and identity hub later
      *
-     * @param participantContextId the Participant Context ID that was created by the tenant manager. Use {@link #getParticipantContextId(String, String)} to retrieve it.
+     * @param participantContextId the Participant Context ID that was created by the tenant manager. Use {@link #getParticipantContextId(Long)} to retrieve it.
      */
-    // not transactional, no database interaction
+    @Transactional
     public ClientCredentials getClientCredentials(String participantContextId) {
         var secret = vaultClient.readSecret("/v1/secret/data/%s".formatted(participantContextId));
         if (!StringUtils.hasText(secret)) {

@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.client.hashicorpvault;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -10,6 +11,8 @@ import java.util.Map;
 @Component
 public class HashicorpVaultClientImpl implements HashicorpVaultClient {
     private final WebClient vaultWebClient;
+    @Value("${vault.token:root}")
+    private String vaultToken;
 
     public HashicorpVaultClientImpl(WebClient vaultWebClient) {
         this.vaultWebClient = vaultWebClient;
@@ -19,6 +22,7 @@ public class HashicorpVaultClientImpl implements HashicorpVaultClient {
     public String readSecret(String path) {
         return vaultWebClient.get()
                 .uri(path)
+                .header("X-Vault-Token", vaultToken)
                 .retrieve()
                 .onStatus(status -> status.equals(HttpStatus.NOT_FOUND), r -> Mono.empty())
                 .bodyToMono(VaultGetSecretResponse.class)
