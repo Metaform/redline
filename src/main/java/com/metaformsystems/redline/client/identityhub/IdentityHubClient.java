@@ -29,7 +29,7 @@ public interface IdentityHubClient {
     void requestCredential(String participantContextId, CredentialRequestDto request);
 
     // Key Pairs operations
-    List<KeyPairResource> getAllKeyPairs(int offset, int limit);
+    List<KeyPairResource> getAllKeyPairs();
 
     List<KeyPairResource> queryKeyPairByParticipantContextId(String participantContextId);
 
