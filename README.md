@@ -1,6 +1,7 @@
-# Redline
+![Redline](/assets/redline.small.svg)
 
-A Spring Boot application with REST endpoints, JPA repositories, Spring Security, and Keycloak authentication.
+A demonstrator UI API server for the Connector Fabric Manager platform. Redline is a fictitious cloud service provider
+offering managed dataspace services to multiple industries. Redline (the UI API server) is built using Spring Boot.
 
 ## Features
 
@@ -25,6 +26,7 @@ The development profile uses an in-memory H2 database:
 ```
 
 Access H2 Console at: http://localhost:8081/h2-console
+
 - JDBC URL: `jdbc:h2:mem:redlinedb`
 - Username: `sa`
 - Password: (leave empty)
@@ -56,6 +58,7 @@ docker-compose down
 ```
 
 After starting the services:
+
 - Keycloak Admin Console: http://localhost:8080 (admin/admin)
 - PostgreSQL: localhost:5432 (redline/redline)
 
@@ -76,8 +79,8 @@ export KEYCLOAK_JWK_SET_URI=http://localhost:8080/realms/your-realm/protocol/ope
 2. Create a new realm (e.g., "redline")
 3. Create a client for your application
 4. Configure the client:
-   - Access Type: bearer-only or public
-   - Valid Redirect URIs: http://localhost:8081/*
+    - Access Type: bearer-only or public
+    - Valid Redirect URIs: http://localhost:8081/*
 5. Create roles (e.g., USER, ADMIN)
 6. Create users and assign roles
 
@@ -104,6 +107,7 @@ Or run directly:
 ```
 
 This starts the application with:
+
 - H2 in-memory database
 - H2 Console at http://localhost:8081/h2-console
 - Server at http://localhost:8081
