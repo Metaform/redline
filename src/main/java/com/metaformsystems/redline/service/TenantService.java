@@ -1,15 +1,21 @@
 package com.metaformsystems.redline.service;
 
-import com.metaformsystems.redline.dao.DeploymentState;
+import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantProfileResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.dao.VPAResource;
+import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.model.Dataspace;
+import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.ParticipantProfile;
 import com.metaformsystems.redline.model.Tenant;
 import com.metaformsystems.redline.model.VersionedEntity;
+import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
@@ -17,27 +23,38 @@ import com.metaformsystems.redline.repository.TenantRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  *
  */
 @Service
 public class TenantService {
+    public static final String STATE_PROPERTY_KEY = "cfm.vpa.state";
     private final TenantRepository tenantRepository;
     private final ParticipantRepository participantRepository;
     private final DataspaceRepository dataspaceRepository;
     private final ServiceProviderRepository serviceProviderRepository;
+    private final TenantManagerClient tenantManagerClient;
+    private final HashicorpVaultClient vaultClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          DataspaceRepository dataspaceRepository,
-                         ServiceProviderRepository serviceProviderRepository) {
+                         ServiceProviderRepository serviceProviderRepository,
+                         TenantManagerClient tenantManagerClient, HashicorpVaultClient vaultClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.dataspaceRepository = dataspaceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
+        this.tenantManagerClient = tenantManagerClient;
+        this.vaultClient = vaultClient;
     }
 
     @Transactional
@@ -61,6 +78,7 @@ public class TenantService {
         // Create participant with dataspaces
         var participant = new ParticipantProfile();
         participant.setIdentifier(registration.tenantName());
+        participant.setTenant(tenant);
 
         // Get dataspaces
         var dataspaces = new HashSet<Dataspace>();
@@ -86,11 +104,65 @@ public class TenantService {
         var tenant = participant.getTenant();
         if (tenant.getCorrelationId() == null) {
             // Create Tenant in CFM and update tenant with correlation id
+            var tmTenant = tenantManagerClient.createTenant(new V1Alpha1NewTenant(Map.of("name", tenant.getName())));
+            tenant.setCorrelationId(tmTenant.id());
         }
 
-        // TODO invoke CFM and update Participant entity with correlation id, identifier, and VPAs
-        participant.setCorrelationId("correlation-id");
-        return toParticipantResource(participantRepository.save(participant));
+        // invoke CFM to deploy the ParticipantProfile and update the internal Participant entity with correlation id, identifier, and VPAs
+        var tmProfile = tenantManagerClient.createParticipantProfile(tenant.getCorrelationId(), new V1Alpha1ParticipantProfile(
+                UUID.randomUUID().toString(), 0L, deployment.webDid(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
+        ));
+        participant.setCorrelationId(tmProfile.id());
+        participant.setIdentifier(tmProfile.identifier());
+
+        participant.getAgents().clear();
+        participant.getAgents().addAll(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
+
+        // wait for participants to be ready
+        var saved = participantRepository.save(participant);
+        return toParticipantResource(saved);
+    }
+
+    @Transactional
+    public String getParticipantContextId(Long participantId) {
+        var participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        var participantCorrelationId = participant.getCorrelationId();
+        var props = tenantManagerClient.getParticipantProfile(participant.getTenant().getCorrelationId(), participantCorrelationId).properties();
+
+        if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
+            var credentialRequestUrl = stateMap.get("credentialRequestUrl");
+            var holderPid = stateMap.get("holderPid");
+            var participantContextId = stateMap.get("participantContextId");
+
+            // update internal participant entity
+            participant.setParticipantContextId(participantContextId.toString());
+
+            return participantContextId.toString();
+        }
+        return null;
+    }
+
+    /**
+     * Get the client credentials for a participant, which is necessary to access the participant's APIs in the
+     * control plane and identity hub later
+     *
+     * @param participantContextId the Participant Context ID that was created by the tenant manager. Use {@link #getParticipantContextId(Long)} to retrieve it.
+     */
+    @Transactional
+    public ClientCredentials getClientCredentials(String participantContextId) {
+        var secret = vaultClient.readSecret("/v1/secret/data/%s".formatted(participantContextId));
+        if (!StringUtils.hasText(secret)) {
+            return null;
+        }
+        //todo: store credentials somewhere safer!
+        var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with participantContextId id: " + participantContextId));
+
+        var clientCredentials = new ClientCredentials(participantContextId, secret);
+        participantProfile.setClientCredentials(clientCredentials);
+
+        return clientCredentials;
     }
 
     @Transactional
@@ -105,9 +177,10 @@ public class TenantService {
     private ParticipantProfileResource toParticipantResource(ParticipantProfile saved) {
         var vpas = saved.getAgents().stream().map(vpa -> new VPAResource(vpa.getId(),
                 VPAResource.Type.valueOf(vpa.getType().name()),
-                DeploymentState.valueOf(vpa.getState().name()))).toList();
+                com.metaformsystems.redline.dao.DeploymentState.valueOf(vpa.getState().name()))).toList();
         var dataspaces = saved.getDataspaces().stream().map(VersionedEntity::getId).toList();
         return new ParticipantProfileResource(saved.getId(), saved.getIdentifier(), vpas, dataspaces);
     }
+
 
 }
