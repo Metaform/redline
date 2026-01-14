@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.service;
 
+import com.metaformsystems.redline.client.identityhub.IdentityHubClient;
 import com.metaformsystems.redline.dao.DataplaneRegistration;
 import com.metaformsystems.redline.dao.NewAsset;
 import com.metaformsystems.redline.dao.NewCelExpression;
@@ -11,7 +12,6 @@ import com.metaformsystems.redline.model.Criterion;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.repository.DataspaceRepository;
-import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,26 +41,24 @@ import static org.awaitility.Awaitility.await;
 public class OnboardingEndToEndTest {
     @Autowired
     private TenantService tenantService;
-
     @Autowired
     private ControlPlaneService controlPlaneService;
     @Autowired
     private DataspaceRepository dataspaceRepository;
-
     @Autowired
     private ServiceProviderRepository serviceProviderRepository;
+    @Autowired
+    private IdentityHubClient identityHubClient;
 
     private ServiceProvider serviceProvider;
     private Dataspace dataspace;
-    @Autowired
-    private ParticipantRepository participantRepository;
 
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) throws IOException {
         registry.add("tenant-manager.url", () -> "http://tm.vps.beardyinc.com");
         registry.add("vault.url", () -> "http://vault.vps.beardyinc.com");
-        registry.add("controlplane.url", () -> "http://cp.vps.beardyinc.com/api/mgmt/v4alpha");
+        registry.add("identityhub.url", () -> "http://ih.vps.beardyinc.com/cs");
         registry.add("controlplane.url", () -> "http://cp.vps.beardyinc.com/api/mgmt/v4alpha");
         registry.add("keycloak.tokenurl", () -> "http://auth.vps.beardyinc.com/realms/edcv/protocol/openid-connect/token");
     }
@@ -147,11 +145,15 @@ public class OnboardingEndToEndTest {
                         "=", permission)))
                 .build());
 
-        
+
         controlPlaneService.prepareDataplane(participantContextId.get(), DataplaneRegistration.Builder.aDataplaneRegistration()
                 .allowedSourceTypes(List.of("HttpData", "HttpCertData"))
                 .allowedTransferTypes(List.of("HttpData-PULL"))
                 .url("http://dataplane.edc-v.svc.cluster.local:8083/api/control/v1/dataflows") //todo: replace with config
                 .build());
+
+        // now for some test assertions:
+        assertThat(identityHubClient.getParticipant(participantContextId.get())).isNotNull();
+        assertThat(identityHubClient.getAllCredentials()).hasSize(1);
     }
 }

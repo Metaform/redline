@@ -6,11 +6,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
-public class TokenProviderImpl implements TokenProvider {
+public class KeycloakTokenProvider implements TokenProvider {
 
     private final WebClient keycloakTokenClient;
 
-    public TokenProviderImpl(WebClient keycloakTokenClient) {
+    public KeycloakTokenProvider(WebClient keycloakTokenClient) {
         this.keycloakTokenClient = keycloakTokenClient;
     }
 
