@@ -81,10 +81,10 @@ public class OnboardingEndToEndTest {
 
         var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
-        var participant = tenant.getParticipants().iterator().next();
+        var participant = tenant.participants().iterator().next();
 
         var webDid = "did:web:identityhub.edc-v.svc.cluster.local%3A7083:test-participant-" + UUID.randomUUID();
-        var deployment = new NewParticipantDeployment(participant.getId(), webDid);
+        var deployment = new NewParticipantDeployment(participant.id(), webDid);
 
         // deploy the profile to CFM
         var result = tenantService.deployParticipant(deployment);

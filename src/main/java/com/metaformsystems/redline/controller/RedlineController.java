@@ -6,8 +6,7 @@ import com.metaformsystems.redline.dao.NewServiceProvider;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantResource;
 import com.metaformsystems.redline.dao.ServiceProviderResource;
-import com.metaformsystems.redline.model.Tenant;
-import com.metaformsystems.redline.repository.ServiceProviderRepository;
+import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.service.ServiceProviderService;
 import com.metaformsystems.redline.service.TenantService;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +28,7 @@ public class RedlineController {
     private final ServiceProviderService serviceProviderService;
     private final TenantService tenantService;
 
-    public RedlineController(ServiceProviderService serviceProviderService,
-                             TenantService tenantService,
-                             ServiceProviderRepository serviceProviderRepository) {
+    public RedlineController(ServiceProviderService serviceProviderService, TenantService tenantService) {
         this.tenantService = tenantService;
         this.serviceProviderService = serviceProviderService;
     }
@@ -57,7 +54,7 @@ public class RedlineController {
 
     @PostMapping("service-providers/{id}/registrations")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Tenant> createRegistration(@PathVariable Long id, @RequestBody NewTenantRegistration registration) {
+    public ResponseEntity<TenantResource> createRegistration(@PathVariable Long id, @RequestBody NewTenantRegistration registration) {
         var tenant = tenantService.registerTenant(id, registration);
         return ResponseEntity.ok(tenant);
     }

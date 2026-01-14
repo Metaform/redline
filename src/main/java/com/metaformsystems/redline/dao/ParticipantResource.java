@@ -8,6 +8,6 @@ import java.util.List;
 public record ParticipantResource(Long id,
                                   String identifier,
                                   List<VPAResource> agents,
-                                  List<DataspaceInfo> infos) {
+                                  List<DataspaceInfo> dataspaceInfos) {
 
 }

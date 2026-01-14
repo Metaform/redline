@@ -95,10 +95,11 @@ class TenantServiceIntegrationTest {
         var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
 
         // Act
-        var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var tenant = tenantRepository.findById(tenantResource.id()).orElseThrow();
 
         // Assert
-        assertThat(tenant).isNotNull();
+        assertThat(tenantResource).isNotNull();
         assertThat(tenant.getName()).isEqualTo("Test Tenant");
         assertThat(tenant.getServiceProvider()).isEqualTo(serviceProvider);
         assertThat(tenant.getParticipants()).hasSize(1);
@@ -115,7 +116,7 @@ class TenantServiceIntegrationTest {
         // Arrange
         var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
-        var participant = tenant.getParticipants().iterator().next();
+        var participant = tenant.participants().iterator().next();
 
         // Mock tenant creation response
         mockWebServer.enqueue(new MockResponse()
@@ -167,7 +168,7 @@ class TenantServiceIntegrationTest {
                         """)
                 .addHeader("Content-Type", "application/json"));
 
-        var deployment = new NewParticipantDeployment(participant.getId(), "did:web:example.com:participant");
+        var deployment = new NewParticipantDeployment(participant.id(), "did:web:example.com:participant");
 
         // Act
         var result = tenantService.deployParticipant(deployment);
@@ -181,10 +182,10 @@ class TenantServiceIntegrationTest {
         assertThat(result.agents()).anyMatch(agent -> agent.type() == VPAResource.Type.DATA_PLANE);
 
         // Verify database state
-        var updatedTenant = tenantRepository.findById(tenant.getId()).orElseThrow();
+        var updatedTenant = tenantRepository.findById(tenant.id()).orElseThrow();
         assertThatCode(() -> UUID.fromString(updatedTenant.getCorrelationId())).doesNotThrowAnyException();
 
-        var updatedParticipant = participantRepository.findById(participant.getId()).orElseThrow();
+        var updatedParticipant = participantRepository.findById(participant.id()).orElseThrow();
         assertThatCode(() -> UUID.fromString(updatedParticipant.getCorrelationId())).doesNotThrowAnyException();
         assertThat(updatedParticipant.getIdentifier()).isEqualTo("did:web:example.com:participant");
         assertThat(updatedParticipant.getAgents()).hasSize(3);
@@ -195,10 +196,10 @@ class TenantServiceIntegrationTest {
         // Arrange
         var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
-        var participant = tenant.getParticipants().iterator().next();
+        var participant = tenant.participants().iterator().next();
 
         // Act
-        var result = tenantService.getParticipant(participant.getId());
+        var result = tenantService.getParticipant(participant.id());
 
         // Assert
         assertThat(result).isNotNull();
@@ -212,7 +213,7 @@ class TenantServiceIntegrationTest {
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
 
         // Act
-        var result = tenantService.getTenant(tenant.getId());
+        var result = tenantService.getTenant(tenant.id());
 
         // Assert
         assertThat(result).isNotNull();
@@ -225,11 +226,12 @@ class TenantServiceIntegrationTest {
     void shouldDeployParticipantWithExistingTenantCorrelationId() {
         // Arrange
         var registration = new NewTenantRegistration("Test Tenant", List.of(dataspace.getId()));
-        var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var tenant = tenantRepository.findById(tenantResource.id()).orElseThrow();
         tenant.setCorrelationId("existing-tenant-id");
         tenantRepository.save(tenant);
 
-        var participant = tenant.getParticipants().iterator().next();
+        var participant = tenantResource.participants().iterator().next();
 
         // Mock only participant profile creation (tenant already exists)
         mockWebServer.enqueue(new MockResponse()
@@ -268,7 +270,7 @@ class TenantServiceIntegrationTest {
                         """)
                 .addHeader("Content-Type", "application/json"));
 
-        var deployment = new NewParticipantDeployment(participant.getId(), "did:web:example.com:participant2");
+        var deployment = new NewParticipantDeployment(participant.id(), "did:web:example.com:participant2");
 
         // Act
         var result = tenantService.deployParticipant(deployment);

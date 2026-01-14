@@ -57,16 +57,12 @@ public class TenantService {
     @Transactional
     TenantResource getTenant(Long id) {
         return tenantRepository.findById(id)
-                .map(t -> {
-                    var participants = t.getParticipants().stream()
-                            .map(this::toParticipantResource).toList();
-                    return new TenantResource(t.getId(), t.getName(), participants);
-                })
+                .map(this::toTenantResource)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
     }
 
     @Transactional
-    public Tenant registerTenant(Long serviceProviderId, NewTenantRegistration registration) {
+    public TenantResource registerTenant(Long serviceProviderId, NewTenantRegistration registration) {
         // Create tenant
         var tenant = new Tenant();
         tenant.setName(registration.tenantName());
@@ -92,7 +88,7 @@ public class TenantService {
 
         savedTenant.getParticipants().add(participant);
 
-        return savedTenant;
+        return toTenantResource(savedTenant);
     }
 
     @Transactional
@@ -185,6 +181,13 @@ public class TenantService {
                         i.getRoles()))
                 .toList();
         return new ParticipantResource(saved.getId(), saved.getIdentifier(), vpas, infos);
+    }
+
+    @NonNull
+    private TenantResource toTenantResource(Tenant t) {
+        var participants = t.getParticipants().stream()
+                .map(this::toParticipantResource).toList();
+        return new TenantResource(t.getId(), t.getName(), participants);
     }
 
 
