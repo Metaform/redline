@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class TenantService {
+    public static final String STATE_PROPERTY_KEY = "cfm.vpa.state";
     private final TenantRepository tenantRepository;
     private final ParticipantRepository participantRepository;
     private final DataspaceRepository dataspaceRepository;
@@ -109,10 +110,24 @@ public class TenantService {
         ));
         participant.setCorrelationId(tmProfile.id());
         participant.setIdentifier(tmProfile.identifier());
+
         participant.setAgents(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
 
+        // wait for participants to be ready
         var saved = participantRepository.save(participant);
         return toParticipantResource(saved);
+    }
+
+    public String getParticipantContextId(String tenantCorrelationId, String participantCorrelationId) {
+        var props = tenantManagerClient.getParticipantProfile(tenantCorrelationId, participantCorrelationId).properties();
+
+        if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
+            var credentialRequestUrl = stateMap.get("credentialRequestUrl");
+            var holderPid = stateMap.get("holderPid");
+            var participantContextId = stateMap.get("participantContextId");
+            return participantContextId != null ? participantContextId.toString() : null;
+        }
+        return null;
     }
 
     @Transactional

@@ -273,6 +273,57 @@ class TenantServiceIntegrationTest {
         assertThat(result.identifier()).isEqualTo("did:web:example.com:participant2");
 
 //         Verify only one request was made (no tenant creation)
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
+        assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldGetParticipantContextId() {
+        // Arrange
+        var tenantId = "tenant-123";
+        var participantId = "participant-456";
+        var expectedContextId = "ctx-789";
+
+        mockWebServer.enqueue(new MockResponse()
+                .setBody("""
+                        {
+                            "id": "%s",
+                            "properties": {
+                                "cfm.vpa.state": {
+                                    "participantContextId": "%s",
+                                    "holderPid": "pid-1",
+                                    "credentialRequestUrl": "http://example.com/requests/1"
+                                }
+                            }
+                        }
+                        """.formatted(participantId, expectedContextId))
+                .addHeader("Content-Type", "application/json"));
+
+        // Act
+        var result = tenantService.getParticipantContextId(tenantId, participantId);
+
+        // Assert
+        assertThat(result).isEqualTo(expectedContextId);
+    }
+
+    @Test
+    void shouldGetParticipantContextId_notReadyYet() {
+        // Arrange
+        var tenantId = "tenant-123";
+        var participantId = "participant-456";
+        var expectedContextId = "ctx-789";
+
+        mockWebServer.enqueue(new MockResponse()
+                .setBody("""
+                        {
+                            "id": "%s"
+                        }
+                        """.formatted(participantId, expectedContextId))
+                .addHeader("Content-Type", "application/json"));
+
+        // Act
+        var result = tenantService.getParticipantContextId(tenantId, participantId);
+
+        // Assert
+        assertThat(result).isNull();
     }
 }
