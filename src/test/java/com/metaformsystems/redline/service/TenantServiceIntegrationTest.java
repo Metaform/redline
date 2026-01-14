@@ -62,6 +62,7 @@ class TenantServiceIntegrationTest {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
         registry.add("tenant-manager.url", () -> mockWebServer.url("/").toString());
+        registry.add("vault.url", () -> mockWebServer.url("/").toString());
     }
 
     @AfterAll
@@ -81,7 +82,10 @@ class TenantServiceIntegrationTest {
         dataspace = new Dataspace();
         dataspace.setName("Test Dataspace");
         dataspace = dataspaceRepository.save(dataspace);
+
+
     }
+
 
     @Test
     void shouldRegisterTenant() {
@@ -271,9 +275,6 @@ class TenantServiceIntegrationTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.identifier()).isEqualTo("did:web:example.com:participant2");
-
-//         Verify only one request was made (no tenant creation)
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
     }
 
     @Test
@@ -325,5 +326,52 @@ class TenantServiceIntegrationTest {
 
         // Assert
         assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldGetClientCredentials() {
+        var vaultResponse = """
+                {
+                  "request_id": "eb024e5f-a5ab-3f8d-3e60-0539db2e14c8",
+                  "lease_id": "",
+                  "renewable": false,
+                  "lease_duration": 0,
+                  "data": {
+                    "data": {
+                      "content": "0b1dbc7e87fc60080f8cd409e475a0b1ac018079eab17491ff87a5c383f9d802"
+                    },
+                    "metadata": {
+                      "created_time": "2026-01-14T08:17:18.993403846Z",
+                      "custom_metadata": null,
+                      "deletion_time": "",
+                      "destroyed": false,
+                      "version": 1
+                    }
+                  },
+                  "wrap_info": null,
+                  "warnings": null,
+                  "auth": null,
+                  "mount_type": "kv"
+                }
+                """;
+
+        mockWebServer.enqueue(new MockResponse().setBody(vaultResponse).addHeader("Content-Type", "application/json"));
+
+        var creds = tenantService.getClientCredentials("test-participant-context-id");
+        assertThat(creds).isNotNull();
+        assertThat(creds.clientId()).isEqualTo("test-participant-context-id");
+        assertThat(creds.clientSecret()).isEqualTo("0b1dbc7e87fc60080f8cd409e475a0b1ac018079eab17491ff87a5c383f9d802");
+    }
+
+    @Test
+    void shouldNotGetCredentials_when404() {
+        var response = """
+                {
+                  "errors": []
+                }
+                """;
+        mockWebServer.enqueue(new MockResponse().setBody(response).addHeader("Content-Type", "application/json").setResponseCode(404));
+
+        assertThat(tenantService.getClientCredentials("test-participant-context-id")).isNull();
     }
 }

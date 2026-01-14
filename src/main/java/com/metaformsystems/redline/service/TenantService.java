@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.service;
 
+import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
@@ -8,6 +9,7 @@ import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantProfileResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.dao.VPAResource;
+import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.ParticipantProfile;
@@ -21,6 +23,7 @@ import com.metaformsystems.redline.repository.TenantRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,17 +42,19 @@ public class TenantService {
     private final DataspaceRepository dataspaceRepository;
     private final ServiceProviderRepository serviceProviderRepository;
     private final TenantManagerClient tenantManagerClient;
+    private final HashicorpVaultClient vaultClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          DataspaceRepository dataspaceRepository,
                          ServiceProviderRepository serviceProviderRepository,
-                         TenantManagerClient tenantManagerClient) {
+                         TenantManagerClient tenantManagerClient, HashicorpVaultClient vaultClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.dataspaceRepository = dataspaceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.tenantManagerClient = tenantManagerClient;
+        this.vaultClient = vaultClient;
     }
 
     @Transactional
@@ -118,6 +123,7 @@ public class TenantService {
         return toParticipantResource(saved);
     }
 
+    // not transactional, no database interaction
     public String getParticipantContextId(String tenantCorrelationId, String participantCorrelationId) {
         var props = tenantManagerClient.getParticipantProfile(tenantCorrelationId, participantCorrelationId).properties();
 
@@ -128,6 +134,21 @@ public class TenantService {
             return participantContextId != null ? participantContextId.toString() : null;
         }
         return null;
+    }
+
+    /**
+     * Get the client credentials for a participant, which is necessary to access the participant's APIs in the
+     * control plane and identity hub later
+     *
+     * @param participantContextId the Participant Context ID that was created by the tenant manager. Use {@link #getParticipantContextId(String, String)} to retrieve it.
+     */
+    // not transactional, no database interaction
+    public ClientCredentials getClientCredentials(String participantContextId) {
+        var secret = vaultClient.readSecret("/v1/secret/data/%s".formatted(participantContextId));
+        if (!StringUtils.hasText(secret)) {
+            return null;
+        }
+        return new ClientCredentials(participantContextId, secret);
     }
 
     @Transactional
@@ -146,5 +167,6 @@ public class TenantService {
         var dataspaces = saved.getDataspaces().stream().map(VersionedEntity::getId).toList();
         return new ParticipantProfileResource(saved.getId(), saved.getIdentifier(), vpas, dataspaces);
     }
+
 
 }
