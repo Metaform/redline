@@ -4,8 +4,6 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -27,13 +25,9 @@ public class ParticipantProfile extends VersionedEntity {
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;
 
-    @ManyToMany
-    @JoinTable(
-            name = "participant_dataspace",
-            joinColumns = @JoinColumn(name = "participant_id"),
-            inverseJoinColumns = @JoinColumn(name = "dataspace_id")
-    )
-    private Set<Dataspace> dataspaces = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "participant_id")
+    private Set<DataspaceInfo> dataspaceInfos = new HashSet<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "participant_id")
@@ -50,12 +44,12 @@ public class ParticipantProfile extends VersionedEntity {
         this.identifier = identifier;
     }
 
-    public Set<Dataspace> getDataspaces() {
-        return dataspaces;
+    public Set<DataspaceInfo> getDataspaceInfos() {
+        return dataspaceInfos;
     }
 
-    public void setDataspaces(Set<Dataspace> dataspaces) {
-        this.dataspaces = dataspaces;
+    public void setDataspaceInfos(Set<DataspaceInfo> dataspaces) {
+        this.dataspaceInfos = dataspaces;
     }
 
     public String getCorrelationId() {

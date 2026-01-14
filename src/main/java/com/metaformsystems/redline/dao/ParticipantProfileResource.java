@@ -5,8 +5,9 @@ import java.util.List;
 /**
  *
  */
-public record ParticipantProfileResource(Long id, String identifier,
+public record ParticipantProfileResource(Long id,
+                                         String identifier,
                                          List<VPAResource> agents,
-                                         List<Long> dataspaces) {
+                                         List<DataspaceInfo> infos) {
 
 }

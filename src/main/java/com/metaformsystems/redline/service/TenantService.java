@@ -10,13 +10,11 @@ import com.metaformsystems.redline.dao.ParticipantProfileResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.dao.VPAResource;
 import com.metaformsystems.redline.model.ClientCredentials;
-import com.metaformsystems.redline.model.Dataspace;
+import com.metaformsystems.redline.model.DataspaceInfo;
 import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.ParticipantProfile;
 import com.metaformsystems.redline.model.Tenant;
-import com.metaformsystems.redline.model.VersionedEntity;
 import com.metaformsystems.redline.model.VirtualParticipantAgent;
-import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.repository.TenantRepository;
@@ -26,10 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -39,19 +38,17 @@ public class TenantService {
     public static final String STATE_PROPERTY_KEY = "cfm.vpa.state";
     private final TenantRepository tenantRepository;
     private final ParticipantRepository participantRepository;
-    private final DataspaceRepository dataspaceRepository;
     private final ServiceProviderRepository serviceProviderRepository;
     private final TenantManagerClient tenantManagerClient;
     private final HashicorpVaultClient vaultClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
-                         DataspaceRepository dataspaceRepository,
                          ServiceProviderRepository serviceProviderRepository,
-                         TenantManagerClient tenantManagerClient, HashicorpVaultClient vaultClient) {
+                         TenantManagerClient tenantManagerClient,
+                         HashicorpVaultClient vaultClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
-        this.dataspaceRepository = dataspaceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.tenantManagerClient = tenantManagerClient;
         this.vaultClient = vaultClient;
@@ -80,12 +77,14 @@ public class TenantService {
         participant.setIdentifier(registration.tenantName());
         participant.setTenant(tenant);
 
-        // Get dataspaces
-        var dataspaces = new HashSet<Dataspace>();
-        for (var dataspaceId : registration.dataspaces()) {
-            dataspaces.add(dataspaceRepository.getReferenceById(dataspaceId));
-        }
-        participant.setDataspaces(dataspaces);
+        // FIXME for now, register in all dataspaces. This should be changed to support tenant registration in specific dataspaces.
+        var dataspaces = registration.dataspaces().stream().map(dataspaceId -> {
+            var info = new DataspaceInfo();
+            info.setDataspaceId(dataspaceId);
+            return info;
+        }).collect(toSet());
+
+        participant.setDataspaceInfos(dataspaces);
 
         var savedTenant = tenantRepository.save(tenant);
 
@@ -178,8 +177,14 @@ public class TenantService {
         var vpas = saved.getAgents().stream().map(vpa -> new VPAResource(vpa.getId(),
                 VPAResource.Type.valueOf(vpa.getType().name()),
                 com.metaformsystems.redline.dao.DeploymentState.valueOf(vpa.getState().name()))).toList();
-        var dataspaces = saved.getDataspaces().stream().map(VersionedEntity::getId).toList();
-        return new ParticipantProfileResource(saved.getId(), saved.getIdentifier(), vpas, dataspaces);
+        var infos = saved.getDataspaceInfos().stream()
+                .map(i -> new com.metaformsystems.redline.dao.DataspaceInfo(
+                        i.getId(),
+                        i.getDataspaceId(),
+                        i.getAgreementTypes(),
+                        i.getRoles()))
+                .toList();
+        return new ParticipantProfileResource(saved.getId(), saved.getIdentifier(), vpas, infos);
     }
 
 
