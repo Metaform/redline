@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -33,7 +34,7 @@ public class ParticipantProfile extends VersionedEntity {
     )
     private Set<Dataspace> dataspaces = new HashSet<>();
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "participant_id")
     private Set<VirtualParticipantAgent> agents = new HashSet<>();
 

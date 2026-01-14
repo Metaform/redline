@@ -1,15 +1,19 @@
 package com.metaformsystems.redline.service;
 
-import com.metaformsystems.redline.dao.DeploymentState;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
+import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantProfileResource;
 import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.dao.VPAResource;
 import com.metaformsystems.redline.model.Dataspace;
+import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.ParticipantProfile;
 import com.metaformsystems.redline.model.Tenant;
 import com.metaformsystems.redline.model.VersionedEntity;
+import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
@@ -18,7 +22,11 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -29,15 +37,18 @@ public class TenantService {
     private final ParticipantRepository participantRepository;
     private final DataspaceRepository dataspaceRepository;
     private final ServiceProviderRepository serviceProviderRepository;
+    private final TenantManagerClient tenantManagerClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          DataspaceRepository dataspaceRepository,
-                         ServiceProviderRepository serviceProviderRepository) {
+                         ServiceProviderRepository serviceProviderRepository,
+                         TenantManagerClient tenantManagerClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.dataspaceRepository = dataspaceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
+        this.tenantManagerClient = tenantManagerClient;
     }
 
     @Transactional
@@ -61,6 +72,7 @@ public class TenantService {
         // Create participant with dataspaces
         var participant = new ParticipantProfile();
         participant.setIdentifier(registration.tenantName());
+        participant.setTenant(tenant);
 
         // Get dataspaces
         var dataspaces = new HashSet<Dataspace>();
@@ -86,11 +98,21 @@ public class TenantService {
         var tenant = participant.getTenant();
         if (tenant.getCorrelationId() == null) {
             // Create Tenant in CFM and update tenant with correlation id
+            var tmTenant = tenantManagerClient.createTenant(new V1Alpha1NewTenant(Map.of("name", tenant.getName())));
+            tenant.setCorrelationId(tmTenant.id());
         }
 
-        // TODO invoke CFM and update Participant entity with correlation id, identifier, and VPAs
-        participant.setCorrelationId("correlation-id");
-        return toParticipantResource(participantRepository.save(participant));
+        // invoke CFM and update Participant entity with correlation id, identifier, and VPAs
+
+        var tmProfile = tenantManagerClient.createParticipantProfile(tenant.getCorrelationId(), new V1Alpha1ParticipantProfile(
+                UUID.randomUUID().toString(), 0L, deployment.webDid(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
+        ));
+        participant.setCorrelationId(tmProfile.id());
+        participant.setIdentifier(tmProfile.identifier());
+        participant.setAgents(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
+
+        var saved = participantRepository.save(participant);
+        return toParticipantResource(saved);
     }
 
     @Transactional
@@ -105,7 +127,7 @@ public class TenantService {
     private ParticipantProfileResource toParticipantResource(ParticipantProfile saved) {
         var vpas = saved.getAgents().stream().map(vpa -> new VPAResource(vpa.getId(),
                 VPAResource.Type.valueOf(vpa.getType().name()),
-                DeploymentState.valueOf(vpa.getState().name()))).toList();
+                com.metaformsystems.redline.dao.DeploymentState.valueOf(vpa.getState().name()))).toList();
         var dataspaces = saved.getDataspaces().stream().map(VersionedEntity::getId).toList();
         return new ParticipantProfileResource(saved.getId(), saved.getIdentifier(), vpas, dataspaces);
     }
