@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 @SpringBootTest
-@ActiveProfiles("dev-pg")
+@ActiveProfiles("dev")
 @Transactional
 class TenantServiceIntegrationTest {
 

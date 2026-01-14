@@ -15,6 +15,7 @@ import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,7 +24,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@EnabledIfEnvironmentVariable(named = "ENABLE_ONBOARDING_TESTS", matches = "true", disabledReason = "This can only run if ENABLE_ONBOARDING_TESTS=true is set in the environment.")
 @SpringBootTest
 @ActiveProfiles("dev")
 // disable transactional tests, because awaitility is used, and opening new threads creates new transactions.
@@ -55,7 +56,7 @@ public class OnboardingEndToEndTest {
 
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) throws IOException {
+    static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("tenant-manager.url", () -> "http://tm.vps.beardyinc.com");
         registry.add("vault.url", () -> "http://vault.vps.beardyinc.com");
         registry.add("identityhub.url", () -> "http://ih.vps.beardyinc.com/cs");
