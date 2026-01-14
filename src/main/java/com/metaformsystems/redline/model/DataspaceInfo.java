@@ -6,7 +6,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.List;
 @Entity
 @Table(name = "dataspace_info")
 public class DataspaceInfo extends VersionedEntity {
-    @NotBlank
+    @NotNull
     @Column(nullable = false)
     private Long dataspaceId;
 

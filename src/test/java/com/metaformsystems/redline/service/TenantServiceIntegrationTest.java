@@ -105,8 +105,8 @@ class TenantServiceIntegrationTest {
 
         var participant = tenant.getParticipants().iterator().next();
         assertThat(participant.getIdentifier()).isEqualTo("Test Tenant");
-        assertThat(participant.getDataspaces()).hasSize(1);
-        assertThat(participant.getDataspaces().iterator().next()).isEqualTo(dataspace);
+        assertThat(participant.getDataspaceInfos()).hasSize(1);
+        assertThat(participant.getDataspaceInfos().iterator().next().getDataspaceId()).isEqualTo(dataspace.getId());
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -203,7 +203,6 @@ class TenantServiceIntegrationTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.identifier()).isEqualTo("Test Tenant");
-        assertThat(result.dataspaces()).containsExactly(dataspace.getId());
     }
 
     @Test
