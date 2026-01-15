@@ -408,7 +408,7 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         RecordedRequest celRequest = mockWebServer.takeRequest();
-        assertThat(celRequest.getPath()).isEqualTo("/celexpressions");
+        assertThat(celRequest.getPath()).isEqualTo("/v4alpha/celexpressions");
         assertThat(celRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
         assertThat(celRequest.getBody().readUtf8()).contains("cel-123");
     }
@@ -432,7 +432,7 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         RecordedRequest dataplaneRequest = mockWebServer.takeRequest();
-        assertThat(dataplaneRequest.getPath()).isEqualTo("/dataplanes/" + participantContextId);
+        assertThat(dataplaneRequest.getPath()).isEqualTo("/v4alpha/dataplanes/" + participantContextId);
         assertThat(dataplaneRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
     }
 }

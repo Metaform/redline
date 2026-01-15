@@ -31,7 +31,6 @@ import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.service.TenantService;
-import org.hibernate.validator.internal.constraintvalidators.bv.notempty.NotEmptyValidatorForArray;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +75,6 @@ public class OnboardingEndToEndTest {
 
     private ServiceProvider serviceProvider;
     private Dataspace dataspace;
-    private NotEmptyValidatorForArray notEmptyValidatorForArray;
 
 
     @DynamicPropertySource
