@@ -53,48 +53,68 @@ public class RedlineController {
         return ResponseEntity.ok(saved);
     }
 
-    @PostMapping("service-providers/{providerId}/tenants")
+    @PostMapping("service-providers/{serviceProviderId}/tenants")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<TenantResource> registerTenant(@PathVariable Long providerId,
+    public ResponseEntity<TenantResource> registerTenant(@PathVariable Long serviceProviderId,
                                                          @RequestBody NewTenantRegistration registration) {
-        var tenant = tenantService.registerTenant(providerId, registration);
+        var tenant = tenantService.registerTenant(serviceProviderId, registration);
         return ResponseEntity.ok(tenant);
     }
 
-    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/deployments")
+    @PostMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/deployments")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ParticipantResource> deployParticipant(@RequestBody NewParticipantDeployment deployment) {
+    public ResponseEntity<ParticipantResource> deployParticipant(@PathVariable Long serviceProviderId,
+                                                                 @PathVariable Long tenantId,
+                                                                 @PathVariable Long participantId,
+                                                                 @RequestBody NewParticipantDeployment deployment) {
         var participant = tenantService.deployParticipant(deployment);
         return ResponseEntity.ok(participant);
     }
 
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}")
+    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<TenantResource> getTenant(@RequestBody Long providerId, @RequestBody Long tenantId) {
+    public ResponseEntity<TenantResource> getTenant(@PathVariable Long serviceProviderId, @PathVariable Long tenantId) {
         var tenantResource = tenantService.getTenant(tenantId);
         // TODO auth check for provider access
         return ResponseEntity.ok(tenantResource);
     }
 
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/participantId")
+    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/participantId")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ParticipantResource> getParticipant(@RequestBody Long providerId,
-                                                              @RequestBody Long tenantId,
+    public ResponseEntity<ParticipantResource> getParticipant(@PathVariable Long serviceProviderId,
+                                                              @PathVariable Long tenantId,
                                                               @RequestBody Long participantId) {
         var participantResource = tenantService.getParticipant(participantId);
         // TODO auth check for provider access
         return ResponseEntity.ok(participantResource);
     }
 
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/participantId/partners/{dataspaceId}")
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/partners/{dataspaceId}")
 //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<PartnerReferenceResource>> getPartners(@RequestBody Long providerId,
-                                                                      @RequestBody Long tenantId,
-                                                                      @RequestBody Long participantId,
-                                                                      @RequestBody Long dataspaceId) {
+    public ResponseEntity<List<PartnerReferenceResource>> getPartners(@PathVariable Long providerId,
+                                                                      @PathVariable Long tenantId,
+                                                                      @PathVariable Long participantId,
+                                                                      @PathVariable Long dataspaceId) {
         var references = tenantService.getPartnerReferences(participantId, dataspaceId);
         // TODO auth check for provider access
         return ResponseEntity.ok(references);
     }
 
+    /* REQUIRED ACTIONS
+     - start registration (create tenant, create participant)
+     - poll for registration completion
+     - upload document (with metadata); asset, policy and contract def are created hard-coded
+     - list all my uploaded files
+     */
+
+     /* NICE TO HAVE
+     - get dataspace catalog
+     - start download (negotiate contract, start TP, execute transfer)
+     - view all downloaded files (redline must track downloads)
+     */
+
+    /* EVEN NICER TO HAVE
+     - list transfers, negotiations
+     - get asset, policy and contract def for a document
+     */
 }
