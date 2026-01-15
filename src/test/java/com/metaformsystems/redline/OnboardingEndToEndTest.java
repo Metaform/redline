@@ -31,6 +31,7 @@ import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.service.TenantService;
+import org.hibernate.validator.internal.constraintvalidators.bv.notempty.NotEmptyValidatorForArray;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,7 @@ public class OnboardingEndToEndTest {
 
     private ServiceProvider serviceProvider;
     private Dataspace dataspace;
+    private NotEmptyValidatorForArray notEmptyValidatorForArray;
 
 
     @DynamicPropertySource
@@ -82,6 +85,7 @@ public class OnboardingEndToEndTest {
         registry.add("vault.url", () -> "http://vault.vps.beardyinc.com");
         registry.add("identityhub.url", () -> "http://ih.vps.beardyinc.com/cs");
         registry.add("controlplane.url", () -> "http://cp.vps.beardyinc.com/api/mgmt");
+        registry.add("dataplane.url", () -> "http://dp.vps.beardyinc.com");
         registry.add("keycloak.tokenurl", () -> "http://auth.vps.beardyinc.com/realms/edcv/protocol/openid-connect/token");
     }
 
@@ -142,7 +146,7 @@ public class OnboardingEndToEndTest {
     }
 
     @Test
-    void shouldDownloadCert() {
+    void shouldDownloadCert() throws IOException {
         var providerInfo = onboardParticipant();
         var consumerInfo = onboardParticipant();
 
@@ -156,23 +160,62 @@ public class OnboardingEndToEndTest {
                 .build());
 
         //prepare provider - create asset, policy etc.
-        var todoAssetId = "todo_asset_" + providerInfo.contextId();
-        publishHttpAsset(providerInfo.contextId(), todoAssetId);
+        var certAssertId = "cert_asset_" + providerInfo.contextId();
+        var fileId = publishCertificateAsset(providerInfo.contextId(), certAssertId, "testdocument.pdf");
         registerDataPlane(providerInfo.contextId());
 
         // now acting as the consumer, getting the provider's catalog
         var catalog = managementApiClient.getCatalog(consumerInfo.contextId(), providerInfo.webDid());
 
-        // get the asset with id "todo_asset"
-        var dataset = catalog.getDataset().stream().filter(ds -> ds.getId().equals(todoAssetId)).findFirst().orElseThrow();
+        // get the asset with id "cert_asset"
+        var dataset = catalog.getDataset().stream().filter(ds -> ds.getId().equals(certAssertId)).findFirst().orElseThrow();
         var offers = dataset.getHasPolicy();
 
         var policyId = offers.getFirst().getId();
         assertThat(policyId).isNotNull();
 
-        // start transfer using the all-in-one API from JAD
-        var result = managementApiClient.getData(consumerInfo.contextId(), providerInfo.webDid(), policyId);
-        assertThat(result).isNotNull().isInstanceOf(List.class);
+        var endpointDataReference = managementApiClient.setupTransfer(consumerInfo.contextId(), policyId, providerInfo.webDid());
+        var bytes = dataPlaneApiClient.downloadFile(endpointDataReference.get("https://w3id.org/edc/v0.0.1/ns/authorization"), fileId);
+        var expectedBytes = Thread.currentThread().getContextClassLoader().getResourceAsStream("testdocument.pdf").readAllBytes();
+        assertThat(bytes).isEqualTo(expectedBytes);
+    }
+
+    private String publishCertificateAsset(String participantContextId, String certificateAssetId, String resourceName) {
+        // create HTTP asset
+        var permission = "membership_asset";
+        managementApiClient.createAsset(participantContextId, NewAsset.Builder.aNewAsset()
+                .id(certificateAssetId)
+                .properties(Map.of("description", "This asset requires the Membership credential to access"))
+                .privateProperties(Map.of("permission", permission))
+                .dataAddress(Map.of(
+                        "@type", "DataAddress",
+                        "type", "HttpCertData"))
+                .build());
+        // create policy
+        var membershipPolicy = "membership_policy_" + participantContextId;
+        managementApiClient.createPolicy(participantContextId, NewPolicyDefinition.Builder.aNewPolicyDefinition()
+                .id(membershipPolicy)
+                .policy(new NewPolicyDefinition.PolicySet(List.of(new NewPolicyDefinition.PolicySet.Permission("use", List.of(new NewPolicyDefinition.PolicySet.Constraint("MembershipCredential", "eq", "active"))))))
+                .build());
+
+        // create contract definition
+        var membershipContractDef = "membership_contract_def_" + participantContextId;
+        managementApiClient.createContractDefinition(participantContextId, NewContractDefinition.Builder.aNewContractDefinition()
+                .id(membershipContractDef)
+                .accessPolicyId(membershipPolicy)
+                .contractPolicyId(membershipPolicy)
+                .assetsSelector(Set.of(new Criterion("privateProperties.'https://w3id.org/edc/v0.0.1/ns/permission'",
+                        "=", permission)))
+                .build());
+
+        var fileId = new AtomicReference<String>();
+        try (var is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
+            var response = dataPlaneApiClient.uploadMultipart(participantContextId, Map.of(), is);
+            fileId.set(response.id());
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+        return fileId.get();
     }
 
     @NotNull

@@ -20,15 +20,17 @@ import com.metaformsystems.redline.client.management.dto.QuerySpec;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +41,11 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     private final TokenProvider tokenProvider;
 
     public DataPlaneApiClientImpl(WebClient dataPlaneWebClient, ParticipantRepository participantRepository, TokenProvider tokenProvider) {
-        this.dataPlaneWebClient = dataPlaneWebClient;
+        this.dataPlaneWebClient = dataPlaneWebClient.mutate()
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(50 * 1024 * 1024))
+                        .build())
+                .build();
         this.participantRepository = participantRepository;
         this.tokenProvider = tokenProvider;
     }
@@ -50,15 +56,16 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
 
         // Add metadata fields
         if (metadata != null) {
-            metadata.forEach(bodyBuilder::part);
+            bodyBuilder.part("metadata", metadata);
         }
 
         // Add file data
-        bodyBuilder.part("file", new InputStreamResource(data))
+        bodyBuilder
+                .part("file", new InputStreamResource(data))
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
         return dataPlaneWebClient.post()
-                .uri("/app/internal/api/control/upload")
+                .uri("/app/internal/api/control/certs")
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .bodyValue(bodyBuilder.build())
@@ -68,10 +75,9 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     }
 
     @Override
-    public List<UploadResponse> getAllUploads(String participantContextId) {
+    public List<UploadResponse> getAllUploads() {
         return dataPlaneWebClient.post()
                 .uri("/app/internal/api/control/certs/request")
-                .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<UploadResponse>>() {
                 })
@@ -90,23 +96,22 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     }
 
     @Override
-    public OutputStream downloadFile(String participantContextId, String fileId) {
-        byte[] fileData = dataPlaneWebClient.get()
-                .uri("/app/public/api/data/certs/" + fileId)
-                .header("Authorization", "Bearer " + getToken(participantContextId))
-                .retrieve()
-                .bodyToMono(byte[].class)
-                .block();
+    public byte[] downloadFile(String authToken, String fileId) {
 
-        var outputStream = new ByteArrayOutputStream();
-        try {
-            if (fileData != null) {
-                outputStream.write(fileData);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to write file data to output stream", e);
-        }
-        return outputStream;
+        Flux<DataBuffer> dataBufferFlux = dataPlaneWebClient.get()
+                .uri("/app/public/api/data/certs/" + fileId)
+                .header("Authorization", authToken)
+                .retrieve()
+                .bodyToFlux(DataBuffer.class);
+
+        return DataBufferUtils.join(dataBufferFlux)
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+                    return bytes;
+                })
+                .block();
     }
 
     private String getToken(String participantContextId) {

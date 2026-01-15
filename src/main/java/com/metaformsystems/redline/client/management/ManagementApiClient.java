@@ -64,4 +64,6 @@ public interface ManagementApiClient {
     void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration);
 
     Object getData(String participantContextId, String counterPartyId, String offerId);
+
+    Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId);
 }

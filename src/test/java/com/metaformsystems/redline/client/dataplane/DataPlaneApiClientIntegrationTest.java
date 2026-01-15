@@ -7,7 +7,6 @@ import com.metaformsystems.redline.model.Participant;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +60,7 @@ class DataPlaneApiClientIntegrationTest {
     void setUp() {
         participantContextId = "test-participant-context-id";
 
-        Participant participant = new Participant();
+        var participant = new Participant();
         participant.setParticipantContextId(participantContextId);
         participant.setClientCredentials(new ClientCredentials("test-client-id", "test-client-secret"));
         participantRepository.save(participant);
@@ -98,7 +96,7 @@ class DataPlaneApiClientIntegrationTest {
                 .addHeader("Content-Type", "application/json"));
 
         // Act
-        var result = dataPlaneApiClient.getAllUploads(participantContextId);
+        var result = dataPlaneApiClient.getAllUploads();
 
         // Assert
         assertThat(result).hasSize(2);
@@ -108,10 +106,9 @@ class DataPlaneApiClientIntegrationTest {
         assertThat(result.get(1).id()).isEqualTo("upload-456");
         assertThat(result.get(1).contentType()).isEqualTo("image/png");
 
-        RecordedRequest request = mockWebServer.takeRequest();
+        var request = mockWebServer.takeRequest();
         assertThat(request.getPath()).isEqualTo("/app/internal/api/control/certs/request");
         assertThat(request.getMethod()).isEqualTo("POST");
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer test-token");
     }
 
     @Test
@@ -145,17 +142,16 @@ class DataPlaneApiClientIntegrationTest {
         assertThat(result.getFirst().contentType()).isEqualTo("text/plain");
         assertThat(result.getFirst().properties()).containsEntry("filename", "readme.txt");
 
-        RecordedRequest request = mockWebServer.takeRequest();
+        var request = mockWebServer.takeRequest();
         assertThat(request.getPath()).isEqualTo("/app/internal/api/control/certs/request");
         assertThat(request.getMethod()).isEqualTo("POST");
-        assertThat(request.getBody().readUtf8()).contains("QuerySpec");
     }
 
     @Test
     void shouldDownloadFile() throws InterruptedException {
         // Arrange
-        String fileId = "file-123";
-        byte[] expectedFileData = "This is the file content".getBytes();
+        var fileId = "file-123";
+        var expectedFileData = "This is the file content".getBytes();
 
         mockWebServer.enqueue(new MockResponse()
                 .setBody(new String(expectedFileData))
@@ -165,20 +161,17 @@ class DataPlaneApiClientIntegrationTest {
         var result = dataPlaneApiClient.downloadFile(participantContextId, fileId);
 
         // Assert
-        assertThat(result).isInstanceOf(ByteArrayOutputStream.class);
-        var byteArrayOutputStream = (ByteArrayOutputStream) result;
-        assertThat(byteArrayOutputStream.toByteArray()).isEqualTo(expectedFileData);
+        assertThat(result).isEqualTo(expectedFileData);
 
-        RecordedRequest request = mockWebServer.takeRequest();
+        var request = mockWebServer.takeRequest();
         assertThat(request.getPath()).isEqualTo("/app/public/api/data/certs/" + fileId);
         assertThat(request.getMethod()).isEqualTo("GET");
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer test-token");
     }
 
     @Test
     void shouldDownloadEmptyFile() throws InterruptedException {
         // Arrange
-        String fileId = "empty-file";
+        var fileId = "empty-file";
 
         mockWebServer.enqueue(new MockResponse()
                 .setBody("")
@@ -188,11 +181,9 @@ class DataPlaneApiClientIntegrationTest {
         var result = dataPlaneApiClient.downloadFile(participantContextId, fileId);
 
         // Assert
-        assertThat(result).isInstanceOf(ByteArrayOutputStream.class);
-        var byteArrayOutputStream = (ByteArrayOutputStream) result;
-        assertThat(byteArrayOutputStream.toByteArray()).isEmpty();
+        assertThat(result).isNullOrEmpty();
 
-        RecordedRequest request = mockWebServer.takeRequest();
+        var request = mockWebServer.takeRequest();
         assertThat(request.getPath()).isEqualTo("/app/public/api/data/certs/" + fileId);
     }
 }

@@ -18,7 +18,6 @@ import com.metaformsystems.redline.client.dataplane.dto.UploadResponse;
 import com.metaformsystems.redline.client.management.dto.QuerySpec;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ public interface DataPlaneApiClient {
     /**
      * This is used on the provider side to list all uploaded files
      */
-    List<UploadResponse> getAllUploads(String participantContextId);
+    List<UploadResponse> getAllUploads();
 
     /**
      * This method is used on the consumer side to query all files that are offered on the network
@@ -46,5 +45,5 @@ public interface DataPlaneApiClient {
      *
      * @param fileId the id of the file to download
      */
-    OutputStream downloadFile(String participantContextId, String fileId);
+    byte[] downloadFile(String authToken, String fileId);
 }

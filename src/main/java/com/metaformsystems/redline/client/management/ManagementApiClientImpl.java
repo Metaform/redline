@@ -236,6 +236,20 @@ public class ManagementApiClientImpl implements ManagementApiClient {
                 .block();
     }
 
+    @Override
+    public Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId) {
+        return controlPlaneWebClient.post()
+                .uri("/v1alpha/participants/%s/transfer".formatted(participantContextId))
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .bodyValue(Map.of(
+                        "policyId", policyId,
+                        "providerId", providerId))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {
+                })
+                .block();
+    }
+
 
     private String getToken(String participantContextId) {
         var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
