@@ -1,14 +1,15 @@
 package com.metaformsystems.redline.service;
 
 import com.metaformsystems.redline.client.identityhub.IdentityHubClient;
-import com.metaformsystems.redline.dao.Criterion;
+import com.metaformsystems.redline.client.management.ManagementApiClient;
+import com.metaformsystems.redline.client.management.dto.Criterion;
+import com.metaformsystems.redline.client.management.dto.NewAsset;
+import com.metaformsystems.redline.client.management.dto.NewCelExpression;
+import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
+import com.metaformsystems.redline.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.dao.DataplaneRegistration;
-import com.metaformsystems.redline.dao.NewAsset;
-import com.metaformsystems.redline.dao.NewCelExpression;
-import com.metaformsystems.redline.dao.NewContractDefinition;
 import com.metaformsystems.redline.dao.NewDataspaceInfo;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
-import com.metaformsystems.redline.dao.NewPolicyDefinition;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.ServiceProvider;
@@ -44,7 +45,7 @@ public class OnboardingEndToEndTest {
     @Autowired
     private TenantService tenantService;
     @Autowired
-    private ControlPlaneService controlPlaneService;
+    private ManagementApiClient controlPlaneService;
     @Autowired
     private DataspaceRepository dataspaceRepository;
     @Autowired
