@@ -14,6 +14,7 @@
 
 package com.metaformsystems.redline.client.management;
 
+import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
@@ -56,6 +57,11 @@ public interface ManagementApiClient {
     // CEL expressions
     void createCelExpression(NewCelExpression celExpression);
 
+    // Catalog
+    Catalog getCatalog(String participantContextId, String counterPartyId);
+
     // others
     void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration);
+
+    Object getData(String participantContextId, String counterPartyId, String offerId);
 }

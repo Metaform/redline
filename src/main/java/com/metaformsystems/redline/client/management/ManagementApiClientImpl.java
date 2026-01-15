@@ -15,6 +15,7 @@
 package com.metaformsystems.redline.client.management;
 
 import com.metaformsystems.redline.client.TokenProvider;
+import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
@@ -57,7 +58,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
         var token = getToken(participantContextId);
 
         controlPlaneWebClient.post()
-                .uri("/participants/%s/assets".formatted(participantContextId))
+                .uri("/v4alpha/participants/%s/assets".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(token))
                 .bodyValue(asset)
                 .retrieve()
@@ -90,7 +91,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void createPolicy(String participantContextId, NewPolicyDefinition policy) {
         controlPlaneWebClient.post()
-                .uri("/participants/%s/policydefinitions".formatted(participantContextId))
+                .uri("/v4alpha/participants/%s/policydefinitions".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(policy)
                 .retrieve()
@@ -122,7 +123,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
     public void createContractDefinition(String participantContextId, NewContractDefinition contractDefinition) {
         controlPlaneWebClient.post()
-                .uri("/participants/%s/contractdefinitions".formatted(participantContextId))
+                .uri("/v4alpha/participants/%s/contractdefinitions".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(contractDefinition)
                 .retrieve()
@@ -191,7 +192,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
         var token = tokenProvider.getToken(adminCredentials.clientId(), adminCredentials.clientSecret(), "management-api:write management-api:read");
         controlPlaneWebClient.post()
-                .uri("/celexpressions")
+                .uri("/v4alpha/celexpressions")
                 .header("Authorization", "Bearer %s".formatted(token))
                 .bodyValue(celExpression)
                 .retrieve()
@@ -200,13 +201,38 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
+    public Catalog getCatalog(String participantContextId, String counterPartyDid) {
+        return controlPlaneWebClient.post()
+                .uri("/v1alpha/participants/%s/catalog".formatted(participantContextId))
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .bodyValue(Map.of("counterPartyDid", counterPartyDid))
+                .retrieve()
+                .bodyToMono(Catalog.class)
+                .block();
+    }
+
+    @Override
     public void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration) {
         controlPlaneWebClient.post()
-                .uri("/dataplanes/%s".formatted(participantContextId))
+                .uri("/v4alpha/dataplanes/%s".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(dataplaneRegistration)
                 .retrieve()
                 .bodyToMono(Void.class)
+                .block();
+    }
+
+    @Override
+    public Object getData(String participantContextId, String counterPartyId, String policyId) {
+        return controlPlaneWebClient.post()
+                .uri("/v1alpha/participants/%s/data".formatted(participantContextId))
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .bodyValue(Map.of(
+                        "providerId", counterPartyId,
+                        "policyId", policyId))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<>() {
+                })
                 .block();
     }
 
@@ -215,8 +241,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
         var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with context id: " + participantContextId));
 
-        var token = tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
-        return token;
+        return tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
     }
 
 }

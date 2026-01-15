@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.client.management;
 
+import com.metaformsystems.redline.client.TokenProvider;
 import com.metaformsystems.redline.client.management.dto.Criterion;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -30,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -44,6 +48,9 @@ class ManagementApiClientIntegrationTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
+    @MockitoBean
+    private TokenProvider tokenProvider;
+
     private Participant participant;
     private String participantContextId;
 
@@ -52,7 +59,6 @@ class ManagementApiClientIntegrationTest {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
         registry.add("controlplane.url", () -> mockWebServer.url("/").toString());
-        registry.add("keycloak.tokenurl", () -> mockWebServer.url("/token").toString());
     }
 
     @AfterAll
@@ -70,6 +76,9 @@ class ManagementApiClientIntegrationTest {
         participant.setParticipantContextId(participantContextId);
         participant.setClientCredentials(new ClientCredentials("test-client-id", "test-client-secret"));
         participant = participantRepository.save(participant);
+
+        // Mock token provider to return a test token
+        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
     }
 
     @Test
@@ -80,17 +89,6 @@ class ManagementApiClientIntegrationTest {
                 .properties(Map.of("name", "Test Asset", "contenttype", "application/json"))
                 .build();
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock asset creation response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204)
@@ -100,9 +98,6 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.createAsset(participantContextId, asset);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
-        assertThat(tokenRequest.getPath()).isEqualTo("/token");
-
         RecordedRequest assetRequest = mockWebServer.takeRequest();
         assertThat(assetRequest.getPath()).contains("/participants/" + participantContextId + "/assets");
         assertThat(assetRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
@@ -115,17 +110,6 @@ class ManagementApiClientIntegrationTest {
         var query = QuerySpec.Builder.aQuerySpecDto()
                 .filterExpression(List.of(new Criterion("id", "=", "asset-123")))
                 .build();
-
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock query response
         mockWebServer.enqueue(new MockResponse()
@@ -147,9 +131,8 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0)).containsEntry("@id", "asset-123");
+        assertThat(result.getFirst()).containsEntry("@id", "asset-123");
 
-        RecordedRequest request = mockWebServer.takeRequest(); // token request
         RecordedRequest queryRequest = mockWebServer.takeRequest();
         assertThat(queryRequest.getPath()).contains("/assets/request");
         assertThat(queryRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
@@ -160,16 +143,6 @@ class ManagementApiClientIntegrationTest {
         // Arrange
         String assetId = "asset-123";
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock delete response
         mockWebServer.enqueue(new MockResponse()
@@ -179,7 +152,7 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.deleteAsset(participantContextId, assetId);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest deleteRequest = mockWebServer.takeRequest();
         assertThat(deleteRequest.getPath()).contains("/assets/" + assetId);
         assertThat(deleteRequest.getMethod()).isEqualTo("DELETE");
@@ -194,17 +167,6 @@ class ManagementApiClientIntegrationTest {
                 .policy(new NewPolicyDefinition.PolicySet(List.of(new NewPolicyDefinition.PolicySet.Permission("use", List.of(new NewPolicyDefinition.PolicySet.Constraint("foo", "=", "bar"))))))
                 .build();
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock policy creation response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204)
@@ -214,7 +176,7 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.createPolicy(participantContextId, policy);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest policyRequest = mockWebServer.takeRequest();
         assertThat(policyRequest.getPath()).contains("/participants/" + participantContextId + "/policydefinitions");
         assertThat(policyRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
@@ -225,17 +187,6 @@ class ManagementApiClientIntegrationTest {
     void shouldQueryPolicyDefinitions() throws InterruptedException {
         // Arrange
         var query = QuerySpec.Builder.aQuerySpecDto().build();
-
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock query response
         mockWebServer.enqueue(new MockResponse()
@@ -254,9 +205,9 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0)).containsEntry("@id", "policy-123");
+        assertThat(result.getFirst()).containsEntry("@id", "policy-123");
 
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest queryRequest = mockWebServer.takeRequest();
         assertThat(queryRequest.getPath()).contains("/policydefinitions/request");
     }
@@ -266,17 +217,6 @@ class ManagementApiClientIntegrationTest {
         // Arrange
         String policyId = "policy-123";
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock delete response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204));
@@ -285,7 +225,6 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.deletePolicyDefinition(participantContextId, policyId);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
         RecordedRequest deleteRequest = mockWebServer.takeRequest();
         assertThat(deleteRequest.getPath()).contains("/policydefinitions/" + policyId);
         assertThat(deleteRequest.getMethod()).isEqualTo("DELETE");
@@ -301,17 +240,6 @@ class ManagementApiClientIntegrationTest {
                 .assetsSelector(Set.of(new Criterion("id", "=", "asset-123")))
                 .build();
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock contract definition creation response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204)
@@ -321,7 +249,6 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.createContractDefinition(participantContextId, contractDef);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
         RecordedRequest contractRequest = mockWebServer.takeRequest();
         assertThat(contractRequest.getPath()).contains("/participants/" + participantContextId + "/contractdefinitions");
         assertThat(contractRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
@@ -332,17 +259,6 @@ class ManagementApiClientIntegrationTest {
     void shouldQueryContractDefinitions() throws InterruptedException {
         // Arrange
         var query = QuerySpec.Builder.aQuerySpecDto().build();
-
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock query response
         mockWebServer.enqueue(new MockResponse()
@@ -361,9 +277,9 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0)).containsEntry("@id", "contract-123");
+        assertThat(result.getFirst()).containsEntry("@id", "contract-123");
 
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest queryRequest = mockWebServer.takeRequest();
         assertThat(queryRequest.getPath()).contains("/contractdefinitions/request");
     }
@@ -373,16 +289,6 @@ class ManagementApiClientIntegrationTest {
         // Arrange
         String contractId = "contract-123";
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock delete response
         mockWebServer.enqueue(new MockResponse()
@@ -392,7 +298,7 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.deleteContractDefinition(participantContextId, contractId);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest deleteRequest = mockWebServer.takeRequest();
         assertThat(deleteRequest.getPath()).contains("/contractdefinitions/" + contractId);
         assertThat(deleteRequest.getMethod()).isEqualTo("DELETE");
@@ -406,16 +312,6 @@ class ManagementApiClientIntegrationTest {
         negotiationRequest.put("counterPartyAddress", "http://provider.com/dsp");
         negotiationRequest.put("protocol", "dataspace-protocol-http");
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock negotiation initiation response
         mockWebServer.enqueue(new MockResponse()
@@ -426,7 +322,7 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.initiateContractNegotiation(participantContextId, negotiationRequest);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest negotiationRequestRecorded = mockWebServer.takeRequest();
         assertThat(negotiationRequestRecorded.getPath()).contains("/contractnegotiations");
         assertThat(negotiationRequestRecorded.getHeader("Authorization")).isEqualTo("Bearer test-token");
@@ -437,17 +333,6 @@ class ManagementApiClientIntegrationTest {
     void shouldGetContractNegotiation() throws InterruptedException {
         // Arrange
         String negotiationId = "negotiation-123";
-
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock get negotiation response
         mockWebServer.enqueue(new MockResponse()
@@ -467,7 +352,7 @@ class ManagementApiClientIntegrationTest {
         assertThat(result).containsEntry("@id", "negotiation-123");
         assertThat(result).containsEntry("state", "FINALIZED");
 
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
+
         RecordedRequest getRequest = mockWebServer.takeRequest();
         assertThat(getRequest.getPath()).contains("/contractnegotiations/" + negotiationId);
         assertThat(getRequest.getMethod()).isEqualTo("GET");
@@ -477,17 +362,6 @@ class ManagementApiClientIntegrationTest {
     void shouldQueryContractNegotiations() throws InterruptedException {
         // Arrange
         var query = QuerySpec.Builder.aQuerySpecDto().build();
-
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
 
         // Mock query response
         mockWebServer.enqueue(new MockResponse()
@@ -507,9 +381,8 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0)).containsEntry("@id", "negotiation-123");
+        assertThat(result.getFirst()).containsEntry("@id", "negotiation-123");
 
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
         RecordedRequest queryRequest = mockWebServer.takeRequest();
         assertThat(queryRequest.getPath()).contains("/contractnegotiations/request");
     }
@@ -525,17 +398,6 @@ class ManagementApiClientIntegrationTest {
                 .scopes(Set.of("scope1", "scope2"))
                 .build();
 
-        // Mock token response (for admin credentials)
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "admin-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock CEL expression creation response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204)
@@ -545,10 +407,9 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.createCelExpression(celExpression);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
         RecordedRequest celRequest = mockWebServer.takeRequest();
         assertThat(celRequest.getPath()).isEqualTo("/celexpressions");
-        assertThat(celRequest.getHeader("Authorization")).isEqualTo("Bearer admin-token");
+        assertThat(celRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
         assertThat(celRequest.getBody().readUtf8()).contains("cel-123");
     }
 
@@ -561,17 +422,6 @@ class ManagementApiClientIntegrationTest {
                 .allowedTransferTypes(List.of("HttpData-PULL"))
                 .build();
 
-        // Mock token response
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("""
-                        {
-                            "access_token": "test-token",
-                            "token_type": "bearer",
-                            "expires_in": 3600
-                        }
-                        """)
-                .addHeader("Content-Type", "application/json"));
-
         // Mock dataplane registration response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(204)
@@ -581,7 +431,6 @@ class ManagementApiClientIntegrationTest {
         managementApiClient.prepareDataplane(participantContextId, dataplaneRegistration);
 
         // Assert
-        RecordedRequest tokenRequest = mockWebServer.takeRequest();
         RecordedRequest dataplaneRequest = mockWebServer.takeRequest();
         assertThat(dataplaneRequest.getPath()).isEqualTo("/dataplanes/" + participantContextId);
         assertThat(dataplaneRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
