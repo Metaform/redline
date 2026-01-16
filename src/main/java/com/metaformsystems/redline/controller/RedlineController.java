@@ -1,6 +1,7 @@
 package com.metaformsystems.redline.controller;
 
 import com.metaformsystems.redline.dao.DataspaceResource;
+import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewServiceProvider;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
@@ -104,7 +105,7 @@ public class RedlineController {
         return ResponseEntity.ok(references);
     }
 
-    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/upload")
+    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files")
 //    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> uploadFile(@PathVariable Long participantId,
                                            @PathVariable Long tenantId,
@@ -121,4 +122,12 @@ public class RedlineController {
         return ResponseEntity.ok(null);
     }
 
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files")
+//    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<FileResource>> listFiles(@PathVariable Long participantId,
+                                                        @PathVariable Long tenantId,
+                                                        @PathVariable Long providerId) {
+        var files = tenantService.listFilesForParticipant(participantId);
+        return ResponseEntity.ok(files);
+    }
 }

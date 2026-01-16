@@ -12,6 +12,7 @@ import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.Participant;
 import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.model.Tenant;
+import com.metaformsystems.redline.model.UploadedFile;
 import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.DataspaceRepository;
 import com.metaformsystems.redline.repository.ParticipantRepository;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -90,6 +92,7 @@ class RedlineControllerIntegrationTest {
         registry.add("tenant-manager.url", () -> mockWebServer.url("/").toString());
         registry.add("vault.url", () -> mockWebServer.url("/vault").toString());
         registry.add("dataplane.url", () -> mockWebServer.url("/dataplane").toString());
+        registry.add("controlplane.url", () -> mockWebServer.url("/controlplane").toString());
 
     }
 
@@ -361,13 +364,24 @@ class RedlineControllerIntegrationTest {
         // Create metadata
         var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
         metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        // Mock the upload response from the service
+
+
+        // mock create-asset
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // mock create-policy
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        //mock create-contractdef
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // Mock the upload response from the dataplane
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody("{\"id\": \"generated-file-id-123\"}")
                 .addHeader("Content-Type", "application/json"));
 
-        mockMvc.perform(multipart("/api/ui/service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/upload",
+        mockMvc.perform(multipart("/api/ui/service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files",
                         serviceProvider.getId(), tenant.getId(), participant.getId())
                         .file(mockFile)
                         .part(metadataPart))
@@ -375,5 +389,89 @@ class RedlineControllerIntegrationTest {
 
         assertThat(participantRepository.findById(participant.getId())).isPresent()
                 .hasValueSatisfying(p -> assertThat(p.getUploadedFiles()).hasSize(1));
+    }
+
+    @Test
+    void shouldUploadFile_whenPolicyAndContractDefExist() throws Exception {
+        // Create a tenant and participant
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        participant.setParticipantContextId("test-participant-context-id");
+        participant.setClientCredentials(new ClientCredentials("test-client", "test-secret"));
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        // Create mock file
+        var resourcePath = getClass().getClassLoader().getResource("testdocument.pdf").getPath();
+        var fileContent = Files.readAllBytes(Paths.get(resourcePath));
+        var mockFile = new MockMultipartFile(
+                "file",
+                "testdocument.pdf",
+                "application/pdf",
+                fileContent
+        );
+
+        // Create metadata
+        var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
+        metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+
+        // mock create-asset
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // mock create-policy
+        mockWebServer.enqueue(new MockResponse().setResponseCode(409));
+
+        //mock create-contractdef
+        mockWebServer.enqueue(new MockResponse().setResponseCode(409));
+
+        // Mock the upload response from the dataplane
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"id\": \"generated-file-id-123\"}")
+                .addHeader("Content-Type", "application/json"));
+
+        mockMvc.perform(multipart("/api/ui/service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files",
+                        serviceProvider.getId(), tenant.getId(), participant.getId())
+                        .file(mockFile)
+                        .part(metadataPart))
+                .andExpect(status().isOk());
+
+        assertThat(participantRepository.findById(participant.getId())).isPresent()
+                .hasValueSatisfying(p -> assertThat(p.getUploadedFiles()).hasSize(1));
+    }
+
+    @Test
+    void shouldGetAllFiles() throws Exception {
+        // Create a tenant and participant
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        participant.setParticipantContextId("test-participant-context-id");
+        participant.setClientCredentials(new ClientCredentials("test-client", "test-secret"));
+        participant.getUploadedFiles().add(new UploadedFile("test-file-id", "test-file-name", "test-file-content-type"));
+        participant.getUploadedFiles().add(new UploadedFile("test-file-id2", "test-file-name2", "test-file-content-type2"));
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        mockMvc.perform(get("/api/ui/service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/files",
+                        serviceProvider.getId(), tenant.getId(), participant.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].fileId").value(containsInAnyOrder("test-file-id", "test-file-id2")))
+                .andExpect(jsonPath("$[*].fileName").value(containsInAnyOrder("test-file-name", "test-file-name2")))
+                .andExpect(jsonPath("$[*].contentType").value(containsInAnyOrder("test-file-content-type", "test-file-content-type2")));
     }
 }

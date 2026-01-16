@@ -2,9 +2,12 @@ package com.metaformsystems.redline.service;
 
 import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
+import com.metaformsystems.redline.client.management.ManagementApiClient;
+import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
+import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.ParticipantResource;
@@ -21,18 +24,26 @@ import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.repository.TenantRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.metaformsystems.redline.service.Constants.ASSET_PERMISSION;
+import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_CONTRACT_DEFINITION;
+import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_POLICY;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -41,24 +52,28 @@ import static java.util.stream.Collectors.toSet;
 @Service
 public class TenantService {
     public static final String STATE_PROPERTY_KEY = "cfm.vpa.state";
+
+    private static final Logger log = LoggerFactory.getLogger(TenantService.class);
     private final TenantRepository tenantRepository;
     private final ParticipantRepository participantRepository;
     private final ServiceProviderRepository serviceProviderRepository;
     private final TenantManagerClient tenantManagerClient;
     private final HashicorpVaultClient vaultClient;
     private final DataPlaneApiClient dataPlaneApiClient;
+    private final ManagementApiClient managementApiClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          ServiceProviderRepository serviceProviderRepository,
                          TenantManagerClient tenantManagerClient,
-                         HashicorpVaultClient vaultClient, DataPlaneApiClient dataPlaneApiClient) {
+                         HashicorpVaultClient vaultClient, DataPlaneApiClient dataPlaneApiClient, ManagementApiClient managementApiClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.tenantManagerClient = tenantManagerClient;
         this.vaultClient = vaultClient;
         this.dataPlaneApiClient = dataPlaneApiClient;
+        this.managementApiClient = managementApiClient;
     }
 
     @Transactional
@@ -174,6 +189,8 @@ public class TenantService {
 
         var profile = participantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
+
+        //fixme: figure out a better way to synchronize redline with CFM (periodically, NATS, etc.)
         // refresh VPA status from CFM
         var cfmProfile = tenantManagerClient.getParticipantProfile(profile.getTenant().getCorrelationId(), profile.getCorrelationId());
 
@@ -199,19 +216,66 @@ public class TenantService {
     @Transactional
     public void uploadFileForParticipant(Long participantId, Map<String, Object> metadata, InputStream fileStream, String contentType, String originalFilename) {
 
-        //1. upload file to data plane
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        //1. create asset
         var participantContextId = participant.getParticipantContextId();
+        var asset = createAsset(metadata, contentType, originalFilename);
+        managementApiClient.createAsset(participantContextId, asset);
 
+        //2. create policy
+        var policy = MEMBERSHIP_POLICY;
+        try {
+            managementApiClient.createPolicy(participantContextId, policy);
+        } catch (WebClientResponseException.Conflict e) {
+            // do nothing, policy already exists
+            log.info("Policy already exists: {}", policy.getId());
+        }
+
+        //3. create contract definition if none exists
+        try {
+            managementApiClient.createContractDefinition(participantContextId, MEMBERSHIP_CONTRACT_DEFINITION);
+        } catch (WebClientResponseException.Conflict e) {
+            // do nothing, contract definition already exists
+            log.info("Contract Definition already exists: {}", policy.getId());
+        }
+
+        //4. upload file to data plane
         // todo: do we need this?
         metadata.put("originalFilename", originalFilename);
         metadata.put("contentType", contentType);
 
         var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
         var fileId = response.id();
-        //2. track uploaded file in DB
 
+        //2. track uploaded file in DB
         participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType));
+    }
+
+    @Transactional
+    public List<FileResource> listFilesForParticipant(Long participantId) {
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        return participant.getUploadedFiles().stream().map(f -> new FileResource(f.getFileId(), f.getOriginalFilename(), f.getContentType())).toList();
+    }
+
+
+    private NewAsset createAsset(Map<String, Object> metadata, String contentType, String originalFilename) {
+
+        var privateProperties = new HashMap<String, Object>(Map.of("permission", ASSET_PERMISSION));
+        privateProperties.putAll(metadata);
+
+        return NewAsset.Builder.aNewAsset()
+                .id(UUID.randomUUID().toString())
+                .dataAddress(Map.of(
+                        "type", "HttpCertData",
+                        "@type", "DataAddress"
+                ))
+                .privateProperties(privateProperties)
+                .properties(Map.of(
+                        "description", "A file uploaded by Redline on " + Instant.now().toString(),
+                        "contentType", contentType,
+                        "originalFilename", originalFilename
+                ))
+                .build();
     }
 
     @NonNull
@@ -235,6 +299,5 @@ public class TenantService {
                 .map(this::toParticipantResource).toList();
         return new TenantResource(t.getId(), t.getServiceProvider().getId(), t.getName(), participants);
     }
-
 
 }
