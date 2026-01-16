@@ -79,11 +79,11 @@ public class RedlineController {
         return ResponseEntity.ok(tenantResource);
     }
 
-    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/participantId")
+    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}")
 //    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ParticipantResource> getParticipant(@PathVariable Long serviceProviderId,
                                                               @PathVariable Long tenantId,
-                                                              @RequestBody Long participantId) {
+                                                              @PathVariable Long participantId) {
         var participantResource = tenantService.getParticipant(participantId);
         // TODO auth check for provider access
         return ResponseEntity.ok(participantResource);

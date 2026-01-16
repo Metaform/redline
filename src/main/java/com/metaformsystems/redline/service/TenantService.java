@@ -166,10 +166,19 @@ public class TenantService {
 
     @Transactional
     public ParticipantResource getParticipant(Long id) {
-        return participantRepository.findById(id)
-                .map(this::toParticipantResource)
-                .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
 
+        var profile = participantRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
+        // refresh VPA status from CFM
+        var cfmProfile = tenantManagerClient.getParticipantProfile(profile.getTenant().getCorrelationId(), profile.getCorrelationId());
+
+        cfmProfile.vpas().forEach(cfmVpa -> {
+            var type = VirtualParticipantAgent.VpaType.fromCfmName(cfmVpa.type());
+            profile.getAgentForType(type).setState(DeploymentState.valueOf(cfmVpa.state().toUpperCase()));
+        });
+
+        // No need to save - changes will be automatically persisted at transaction end
+        return toParticipantResource(profile);
     }
 
     @Transactional

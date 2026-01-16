@@ -64,6 +64,9 @@ public class Participant extends VersionedEntity {
         return tenant;
     }
 
+    /**
+     * careful when using this: we typically have to also call to maintain synchronicity {@link Tenant#addParticipant(Participant)}
+     */
     public void setTenant(Tenant tenant) {
         this.tenant = tenant;
     }
@@ -90,5 +93,9 @@ public class Participant extends VersionedEntity {
 
     public void setClientCredentials(ClientCredentials clientCredentials) {
         this.clientCredentials = clientCredentials;
+    }
+
+    public VirtualParticipantAgent getAgentForType(VirtualParticipantAgent.VpaType type) {
+        return agents.stream().filter(agent -> agent.getType() == type).findFirst().orElse(null);
     }
 }
