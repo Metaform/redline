@@ -1,10 +1,12 @@
 package com.metaformsystems.redline.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaformsystems.redline.client.TokenProvider;
 import com.metaformsystems.redline.dao.NewDataspaceInfo;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewServiceProvider;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
+import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.Participant;
@@ -24,19 +26,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockPart;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,6 +77,9 @@ class RedlineControllerIntegrationTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
+    @MockitoBean
+    private TokenProvider tokenProvider;
+
     private ServiceProvider serviceProvider;
     private Dataspace dataspace;
 
@@ -76,6 +89,8 @@ class RedlineControllerIntegrationTest {
         mockWebServer.start();
         registry.add("tenant-manager.url", () -> mockWebServer.url("/").toString());
         registry.add("vault.url", () -> mockWebServer.url("/vault").toString());
+        registry.add("dataplane.url", () -> mockWebServer.url("/dataplane").toString());
+
     }
 
     @AfterAll
@@ -95,6 +110,9 @@ class RedlineControllerIntegrationTest {
         dataspace = new Dataspace();
         dataspace.setName("Test Dataspace");
         dataspace = dataspaceRepository.save(dataspace);
+
+        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
+
     }
 
     @Test
@@ -312,5 +330,50 @@ class RedlineControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.identifier").value("did:web:example.com:participant"))
                 .andExpect(jsonPath("$.agents", hasSize(3)));
+    }
+
+    @Test
+    void shouldUploadFile() throws Exception {
+        // Create a tenant and participant
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        participant.setParticipantContextId("test-participant-context-id");
+        participant.setClientCredentials(new ClientCredentials("test-client", "test-secret"));
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        // Create mock file
+        var resourcePath = getClass().getClassLoader().getResource("testdocument.pdf").getPath();
+        var fileContent = Files.readAllBytes(Paths.get(resourcePath));
+        var mockFile = new MockMultipartFile(
+                "file",
+                "testdocument.pdf",
+                "application/pdf",
+                fileContent
+        );
+
+        // Create metadata
+        var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
+        metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        // Mock the upload response from the service
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"id\": \"generated-file-id-123\"}")
+                .addHeader("Content-Type", "application/json"));
+
+        mockMvc.perform(multipart("/api/ui/service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/upload",
+                        serviceProvider.getId(), tenant.getId(), participant.getId())
+                        .file(mockFile)
+                        .part(metadataPart))
+                .andExpect(status().isOk());
+
+        assertThat(participantRepository.findById(participant.getId())).isPresent()
+                .hasValueSatisfying(p -> assertThat(p.getUploadedFiles()).hasSize(1));
     }
 }

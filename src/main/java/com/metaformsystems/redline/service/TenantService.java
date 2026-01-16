@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.service;
 
+import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
@@ -15,6 +16,7 @@ import com.metaformsystems.redline.model.DataspaceInfo;
 import com.metaformsystems.redline.model.DeploymentState;
 import com.metaformsystems.redline.model.Participant;
 import com.metaformsystems.redline.model.Tenant;
+import com.metaformsystems.redline.model.UploadedFile;
 import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,17 +46,19 @@ public class TenantService {
     private final ServiceProviderRepository serviceProviderRepository;
     private final TenantManagerClient tenantManagerClient;
     private final HashicorpVaultClient vaultClient;
+    private final DataPlaneApiClient dataPlaneApiClient;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          ServiceProviderRepository serviceProviderRepository,
                          TenantManagerClient tenantManagerClient,
-                         HashicorpVaultClient vaultClient) {
+                         HashicorpVaultClient vaultClient, DataPlaneApiClient dataPlaneApiClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.tenantManagerClient = tenantManagerClient;
         this.vaultClient = vaultClient;
+        this.dataPlaneApiClient = dataPlaneApiClient;
     }
 
     @Transactional
@@ -189,6 +194,24 @@ public class TenantService {
                 .flatMap(i -> i.getPartners().stream())
                 .map(r -> new PartnerReferenceResource(r.identifier(), r.nickname()))
                 .toList();
+    }
+
+    @Transactional
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> metadata, InputStream fileStream, String contentType, String originalFilename) {
+
+        //1. upload file to data plane
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        var participantContextId = participant.getParticipantContextId();
+
+        // todo: do we need this?
+        metadata.put("originalFilename", originalFilename);
+        metadata.put("contentType", contentType);
+
+        var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
+        var fileId = response.id();
+        //2. track uploaded file in DB
+
+        participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType));
     }
 
     @NonNull

@@ -28,7 +28,7 @@ public interface DataPlaneApiClient {
      * @param metadata optional metadata to describe the file
      * @param data     an input stream of the file data
      */
-    UploadResponse uploadMultipart(String participantContextId, Map<String, String> metadata, InputStream data);
+    UploadResponse uploadMultipart(String participantContextId, Map<String, Object> metadata, InputStream data);
 
     /**
      * This is used on the provider side to list all uploaded files

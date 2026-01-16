@@ -16,9 +16,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -100,21 +104,21 @@ public class RedlineController {
         return ResponseEntity.ok(references);
     }
 
-    /* REQUIRED ACTIONS
-     - start registration (create tenant, create participant)
-     - poll for registration completion
-     - upload document (with metadata); asset, policy and contract def are created hard-coded
-     - list all my uploaded files
-     */
+    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/upload")
+//    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> uploadFile(@PathVariable Long participantId,
+                                           @PathVariable Long tenantId,
+                                           @PathVariable Long providerId,
+                                           @RequestPart("metadata") Map<String, Object> metadata,
+                                           @RequestPart("file") MultipartFile file) {
 
-     /* NICE TO HAVE
-     - get dataspace catalog
-     - start download (negotiate contract, start TP, execute transfer)
-     - view all downloaded files (redline must track downloads)
-     */
+        try {
+            tenantService.uploadFileForParticipant(participantId, metadata, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
 
-    /* EVEN NICER TO HAVE
-     - list transfers, negotiations
-     - get asset, policy and contract def for a document
-     */
+        return ResponseEntity.ok(null);
+    }
+
 }

@@ -51,7 +51,7 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     }
 
     @Override
-    public UploadResponse uploadMultipart(String participantContextId, Map<String, String> metadata, InputStream data) {
+    public UploadResponse uploadMultipart(String participantContextId, Map<String, Object> metadata, InputStream data) {
         var bodyBuilder = new MultipartBodyBuilder();
 
         // Add metadata fields

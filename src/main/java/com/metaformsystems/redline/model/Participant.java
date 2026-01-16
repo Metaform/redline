@@ -8,7 +8,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -32,9 +34,15 @@ public class Participant extends VersionedEntity {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "participant_id")
     private Set<VirtualParticipantAgent> agents = new HashSet<>();
+
     private String participantContextId;
     @Embedded
     private ClientCredentials clientCredentials;
+
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "uploaded_files")
+    private List<UploadedFile> uploadedFiles = new ArrayList<>();
 
     public String getIdentifier() {
         return identifier;
@@ -97,5 +105,13 @@ public class Participant extends VersionedEntity {
 
     public VirtualParticipantAgent getAgentForType(VirtualParticipantAgent.VpaType type) {
         return agents.stream().filter(agent -> agent.getType() == type).findFirst().orElse(null);
+    }
+
+    public List<UploadedFile> getUploadedFiles() {
+        return uploadedFiles;
+    }
+
+    public void setUploadedFiles(List<UploadedFile> uploadedFiles) {
+        this.uploadedFiles = uploadedFiles;
     }
 }
