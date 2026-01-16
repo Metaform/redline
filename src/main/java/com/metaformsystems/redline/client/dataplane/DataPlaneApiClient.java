@@ -38,7 +38,7 @@ public interface DataPlaneApiClient {
     /**
      * This method is used on the consumer side to query all files that are offered on the network
      */
-    List<UploadResponse> queryProviderFiles(String participantContextId, QuerySpec querySpec);
+    List<UploadResponse> listPublicFiles(String participantContextId, QuerySpec querySpec);
 
     /**
      * Downloads a file from the provider's dataplane

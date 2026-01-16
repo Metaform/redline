@@ -194,6 +194,8 @@ class RedlineControllerIntegrationTest {
         var participant = new Participant();
         participant.setIdentifier("Test Participant");
         participant.setTenant(tenant);
+        participant.setParticipantContextId("test-participant-context-id");
+        participant.setClientCredentials(new ClientCredentials("test-client", "test-secret"));
         participant.setAgents(Set.of(new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.CONTROL_PLANE, DeploymentState.PENDING),
                 new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.CREDENTIAL_SERVICE, DeploymentState.PENDING),
                 new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.DATA_PLANE, DeploymentState.PENDING)));
@@ -365,6 +367,8 @@ class RedlineControllerIntegrationTest {
         var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
         metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
+        // mock create-cel-expression
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
         // mock create-asset
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
@@ -421,6 +425,8 @@ class RedlineControllerIntegrationTest {
         var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
         metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
+        // mock create-cel-expression
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
         // mock create-asset
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));

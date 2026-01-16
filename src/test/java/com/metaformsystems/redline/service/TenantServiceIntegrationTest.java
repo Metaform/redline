@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.metaformsystems.redline.TestData.PARTICIPANT_PROFILE_RESPONSE;
+import static com.metaformsystems.redline.TestData.VAULT_CREDENTIAL_RESPONSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -203,6 +205,9 @@ class TenantServiceIntegrationTest {
         var registration = new NewTenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().iterator().next();
+
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).addHeader("content-type", "application/json").setBody(PARTICIPANT_PROFILE_RESPONSE));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).addHeader("content-type", "application/json").setBody(VAULT_CREDENTIAL_RESPONSE));
 
         // Act
         var result = tenantService.getParticipant(participant.id());

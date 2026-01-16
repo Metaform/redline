@@ -4,6 +4,7 @@ import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.management.ManagementApiClient;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
+import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
@@ -24,6 +25,7 @@ import com.metaformsystems.redline.model.VirtualParticipantAgent;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import com.metaformsystems.redline.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.repository.TenantRepository;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -38,12 +40,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.metaformsystems.redline.service.Constants.ASSET_PERMISSION;
 import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_CONTRACT_DEFINITION;
+import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_EXPRESSION;
+import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_EXPRESSION_ID;
 import static com.metaformsystems.redline.service.Constants.MEMBERSHIP_POLICY;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -134,6 +140,7 @@ public class TenantService {
         participant.setCorrelationId(tmProfile.id());
         participant.setIdentifier(tmProfile.identifier());
 
+
         participant.getAgents().clear();
         participant.getAgents().addAll(tmProfile.vpas().stream().map(apiVpa -> new VirtualParticipantAgent(VirtualParticipantAgent.VpaType.fromCfmName(apiVpa.type()), DeploymentState.valueOf(apiVpa.state().toUpperCase()))).collect(Collectors.toSet()));
 
@@ -147,19 +154,11 @@ public class TenantService {
         var participant = participantRepository.findById(participantId)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
         var participantCorrelationId = participant.getCorrelationId();
-        var props = tenantManagerClient.getParticipantProfile(participant.getTenant().getCorrelationId(), participantCorrelationId).properties();
+        var cfmProfile = tenantManagerClient.getParticipantProfile(participant.getTenant().getCorrelationId(), participantCorrelationId);
 
-        if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
-            var credentialRequestUrl = stateMap.get("credentialRequestUrl");
-            var holderPid = stateMap.get("holderPid");
-            var participantContextId = stateMap.get("participantContextId");
-
-            // update internal participant entity
-            participant.setParticipantContextId(participantContextId.toString());
-
-            return participantContextId.toString();
-        }
-        return null;
+        var pcId = extractParticipantContextId(cfmProfile);
+        participant.setParticipantContextId(pcId);
+        return pcId;
     }
 
     /**
@@ -190,13 +189,19 @@ public class TenantService {
         var profile = participantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + id));
 
-        //fixme: figure out a better way to synchronize redline with CFM (periodically, NATS, etc.)
-        // refresh VPA status from CFM
+        // fixme: figure out a better way to synchronize redline with CFM (periodically, NATS, etc.)
+        // update VPA state
         var cfmProfile = tenantManagerClient.getParticipantProfile(profile.getTenant().getCorrelationId(), profile.getCorrelationId());
+        profile.setParticipantContextId(extractParticipantContextId(cfmProfile));
 
+        // update credentials
+        ofNullable(profile.getClientCredentials()).orElseGet(() -> getClientCredentials(profile.getParticipantContextId()));
+
+        // update VPA deployment state
         cfmProfile.vpas().forEach(cfmVpa -> {
             var type = VirtualParticipantAgent.VpaType.fromCfmName(cfmVpa.type());
-            profile.getAgentForType(type).setState(DeploymentState.valueOf(cfmVpa.state().toUpperCase()));
+            ofNullable(profile.getAgentForType(type)).ifPresentOrElse(agent -> agent.setState(DeploymentState.valueOf(cfmVpa.state().toUpperCase())),
+                    () -> log.warn("VPA received {} from CFM, but not found in participant {}", cfmVpa.type(), profile.getIdentifier()));
         });
 
         // No need to save - changes will be automatically persisted at transaction end
@@ -221,6 +226,19 @@ public class TenantService {
         var participantContextId = participant.getParticipantContextId();
         var asset = createAsset(metadata, contentType, originalFilename);
         managementApiClient.createAsset(participantContextId, asset);
+
+        // create CEL expression
+        try {
+            managementApiClient.createCelExpression(NewCelExpression.Builder.aNewCelExpression()
+                    .id(MEMBERSHIP_EXPRESSION_ID)
+                    .leftOperand("MembershipCredential")
+                    .description("Expression for evaluating membership credential")
+                    .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
+                    .expression(MEMBERSHIP_EXPRESSION)
+                    .build());
+        } catch (WebClientResponseException.Conflict e) {
+            //do nothing, CEL expression already exists
+        }
 
         //2. create policy
         var policy = MEMBERSHIP_POLICY;
@@ -257,6 +275,18 @@ public class TenantService {
         return participant.getUploadedFiles().stream().map(f -> new FileResource(f.getFileId(), f.getOriginalFilename(), f.getContentType())).toList();
     }
 
+    private @Nullable String extractParticipantContextId(V1Alpha1ParticipantProfile participant) {
+
+        var props = participant.properties();
+        if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
+            var credentialRequestUrl = stateMap.get("credentialRequestUrl");
+            var holderPid = stateMap.get("holderPid");
+            var participantContextId = stateMap.get("participantContextId");
+
+            return participantContextId.toString();
+        }
+        return null;
+    }
 
     private NewAsset createAsset(Map<String, Object> metadata, String contentType, String originalFilename) {
 
