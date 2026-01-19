@@ -5,15 +5,9 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/api/ui/service-providers/:providerId/tenants/:tenantId/participants/:participantId/files
+  url: {{baseUrl}}/api/ui/service-providers/{{providerId}}/tenants/{{tenant_id}}/participants/{{participant_id}}/files
   body: multipartForm
   auth: inherit
-}
-
-params:path {
-  participantId: 
-  tenantId: 
-  providerId: 
 }
 
 body:multipart-form {

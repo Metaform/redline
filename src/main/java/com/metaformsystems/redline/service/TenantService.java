@@ -4,6 +4,7 @@ import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.management.ManagementApiClient;
 import com.metaformsystems.redline.client.management.dto.Catalog;
+import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
@@ -311,6 +312,13 @@ public class TenantService {
 
         return managementApiClient.listTransferProcesses(participantContextId);
 
+    }
+
+    public List<ContractNegotiation> listContracts(Long participantId) {
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+        var participantContextId = participant.getParticipantContextId();
+
+        return managementApiClient.listContracts(participantContextId);
     }
 
     /**

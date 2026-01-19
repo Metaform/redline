@@ -5,15 +5,9 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/ui/service-providers/:serviceProviderId/tenants/:tenantId/participants/:participantId
+  url: {{baseUrl}}/api/ui/service-providers/{{providerId}}/tenants/{{tenant_id}}/participants/{{participant_id}}
   body: none
   auth: inherit
-}
-
-params:path {
-  serviceProviderId: 
-  tenantId: 
-  participantId: 
 }
 
 example {
