@@ -92,6 +92,7 @@ class RedlineControllerIntegrationTest {
         registry.add("tenant-manager.url", () -> mockWebServer.url("/").toString());
         registry.add("vault.url", () -> mockWebServer.url("/vault").toString());
         registry.add("dataplane.url", () -> mockWebServer.url("/dataplane").toString());
+        registry.add("dataplane.internal.url", () -> mockWebServer.url("/dataplane").toString());
         registry.add("controlplane.url", () -> mockWebServer.url("/controlplane").toString());
 
     }
