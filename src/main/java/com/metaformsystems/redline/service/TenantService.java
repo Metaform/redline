@@ -3,6 +3,7 @@ package com.metaformsystems.redline.service;
 import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.management.ManagementApiClient;
+import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
@@ -31,10 +32,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ConcurrentLruCache;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.metaformsystems.redline.service.Constants.ASSET_PERMISSION;
@@ -67,6 +71,7 @@ public class TenantService {
     private final HashicorpVaultClient vaultClient;
     private final DataPlaneApiClient dataPlaneApiClient;
     private final ManagementApiClient managementApiClient;
+    private final ConcurrentLruCache<LookupKey, CacheableEntry<Catalog>> catalogCache;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
@@ -80,7 +85,9 @@ public class TenantService {
         this.vaultClient = vaultClient;
         this.dataPlaneApiClient = dataPlaneApiClient;
         this.managementApiClient = managementApiClient;
+        this.catalogCache = new ConcurrentLruCache<>(100, key -> fetchCatalog(key.participantId(), key.did()));
     }
+
 
     @Transactional
     public TenantResource getTenant(Long id) {
@@ -272,7 +279,49 @@ public class TenantService {
     @Transactional
     public List<FileResource> listFilesForParticipant(Long participantId) {
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
-        return participant.getUploadedFiles().stream().map(f -> new FileResource(f.getFileId(), f.getOriginalFilename(), f.getContentType())).toList();
+        return participant.getUploadedFiles().stream()
+                .map(f -> new FileResource(f.getFileId(), f.getOriginalFilename(), f.getContentType(), f.getCreatedAt().toString()))
+                .toList();
+    }
+
+    @Transactional
+    public Catalog requestCatalog(Long participantId, String counterPartyIdentifier, String cacheControl) {
+
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + participantId));
+
+        var key = new LookupKey(participant.getParticipantContextId(), counterPartyIdentifier);
+        var catalogEntry = catalogCache.get(key);
+        //todo: check if expired or must be reloaded
+        if (isExpired(catalogEntry, cacheControl)) {
+            log.info("Catalog cache expired or no-cache requested for participant {} and counterparty {}", participantId, counterPartyIdentifier);
+
+            // removing and re-getting forces a cache update, i.e., reading the remote catalog again
+            catalogCache.remove(key);
+            return catalogCache.get(key).value();
+        }
+
+        return catalogEntry.value();
+    }
+
+    /**
+     * Determines if cache entry requires refresh according to the cacheControl value
+     */
+    private boolean isExpired(CacheableEntry<Catalog> entry, String cacheControl) {
+        if (entry == null) return true;
+        if (!StringUtils.hasText(cacheControl)) return false;
+
+        if (cacheControl.contains("no-cache") || cacheControl.contains("no-store")) {
+            return true;
+        }
+
+        // Parse max-age
+        var maxAgeMatch = Pattern.compile("max-age=(\\d+)").matcher(cacheControl);
+        if (maxAgeMatch.find()) {
+            long maxAgeSeconds = Long.parseLong(maxAgeMatch.group(1));
+            return entry.timestamp().plus(Duration.ofSeconds(maxAgeSeconds)).isBefore(Instant.now());
+        }
+
+        return false;
     }
 
     private @Nullable String extractParticipantContextId(V1Alpha1ParticipantProfile participant) {
@@ -330,4 +379,15 @@ public class TenantService {
         return new TenantResource(t.getId(), t.getServiceProvider().getId(), t.getName(), participants);
     }
 
+    private CacheableEntry<Catalog> fetchCatalog(String participantId, String did) {
+        return new CacheableEntry<>(managementApiClient.getCatalog(participantId, did), Instant.now());
+    }
+
+    private record LookupKey(String participantId, String did) {
+
+    }
+
+    private record CacheableEntry<T>(T value, Instant timestamp) {
+
+    }
 }

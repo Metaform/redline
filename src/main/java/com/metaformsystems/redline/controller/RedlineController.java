@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.controller;
 
+import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.dao.DataspaceResource;
 import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -130,4 +133,17 @@ public class RedlineController {
         var files = tenantService.listFilesForParticipant(participantId);
         return ResponseEntity.ok(files);
     }
+
+    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/catalog")
+    public ResponseEntity<Catalog> requestCatalog(@RequestHeader(name = "Cache-Control", required = false, defaultValue = "no-cache") String cacheControl,
+                                                  @PathVariable Long providerId,
+                                                  @PathVariable Long tenantId,
+                                                  @PathVariable Long participantId,
+                                                  @RequestParam String counterPartyIdentifier) {
+
+        var catalog = tenantService.requestCatalog(participantId, counterPartyIdentifier, cacheControl);
+        return ResponseEntity.ok(catalog);
+    }
+
+
 }

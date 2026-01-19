@@ -14,5 +14,5 @@
 
 package com.metaformsystems.redline.dao;
 
-public record FileResource(String fileId, String fileName, String contentType) {
+public record FileResource(String fileId, String fileName, String contentType, String uploadDateIso) {
 }
