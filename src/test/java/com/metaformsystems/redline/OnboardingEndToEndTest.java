@@ -144,9 +144,13 @@ public class OnboardingEndToEndTest {
         assertThat(result).isNotNull().isInstanceOf(List.class);
 
         // check transfer process
-        var transferProcesses = managementApiClient.listTransferProcesses(consumerInfo.contextId());
+        var transferProcesses = tenantService.listTransferProcesses(consumerInfo.id());
         assertThat(transferProcesses).isNotEmpty();
         assertThat(transferProcesses.getFirst().getContractId()).isNotNull();
+
+        //check contracts
+        var contracts = tenantService.listContracts(consumerInfo.id());
+        assertThat(contracts).isNotEmpty();
     }
 
     @Test

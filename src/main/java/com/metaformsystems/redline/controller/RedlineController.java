@@ -2,6 +2,7 @@ package com.metaformsystems.redline.controller;
 
 import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.dao.Contract;
 import com.metaformsystems.redline.dao.DataspaceResource;
 import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -261,6 +263,42 @@ public class RedlineController {
                                                                        @PathVariable Long tenantId,
                                                                        @PathVariable Long participantId) {
         return ResponseEntity.ok(tenantService.listTransferProcesses(participantId));
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts")
+    @Operation(summary = "List transfer processes", description = "Retrieves a list of all contracts (pending and agreed-on) associated with a specific participant")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved contracts list. May be empty."),
+            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
+    @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
+    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
+    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
+
+    //    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<Contract>> listContracts(@PathVariable Long providerId,
+                                                        @PathVariable Long tenantId,
+                                                        @PathVariable Long participantId) {
+        var contractNegotiations = tenantService.listContracts(participantId);
+        var contracts = contractNegotiations.stream().map(cn -> {
+            var builder = Contract.Builder.aContract()
+                    .counterParty(cn.getCounterPartyId())
+                    .type(cn.getType());
+
+            if (cn.getContractAgreement() != null) {
+                builder.agreementId(cn.getContractAgreement().getAgreementId());
+                builder.assetId(cn.getContractAgreement().getAssetId());
+                builder.signingDate(Instant.ofEpochSecond(cn.getContractAgreement().getContractSigningDate()));
+                builder.provider(cn.getContractAgreement().getProviderId());
+                builder.consumer(cn.getContractAgreement().getConsumerId());
+                builder.policy(cn.getContractAgreement().getPolicy());
+                builder.pending(false);
+            }
+
+            return builder.build();
+        }).toList();
+        return ResponseEntity.ok(contracts);
     }
 
 }

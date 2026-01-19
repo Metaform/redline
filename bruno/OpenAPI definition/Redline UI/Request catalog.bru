@@ -5,20 +5,13 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/api/ui/service-providers/:providerId/tenants/:tenantId/participants/:participantId/catalog
+  url: {{baseUrl}}/api/ui/service-providers/{{providerId}}/tenants/{{tenant_id}}/participants/{{participant_id}}/catalog
   body: none
   auth: inherit
 }
 
 params:query {
-  counterPartyIdentifier: 
   ~cacheControl: 
-}
-
-params:path {
-  providerId: 
-  tenantId: 
-  participantId: 
 }
 
 headers {

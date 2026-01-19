@@ -16,6 +16,7 @@ package com.metaformsystems.redline.client.management;
 
 import com.metaformsystems.redline.client.TokenProvider;
 import com.metaformsystems.redline.client.management.dto.Catalog;
+import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
@@ -27,6 +28,7 @@ import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.repository.ParticipantRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -258,6 +260,18 @@ public class ManagementApiClientImpl implements ManagementApiClient {
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<TransferProcess>>() {
+                })
+                .block();
+    }
+
+    @Override
+    public List<ContractNegotiation> listContracts(String participantContextId) {
+        return controlPlaneWebClient.post()
+                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/request", participantContextId)
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<ContractNegotiation>>() {
                 })
                 .block();
     }

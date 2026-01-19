@@ -5,14 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/ui/service-providers/:serviceProviderId/tenants/:tenantId
+  url: {{baseUrl}}/api/ui/service-providers/{{providerId}}/tenants/{{tenant_id}}
   body: none
   auth: inherit
 }
 
-params:path {
-  serviceProviderId: 
-  tenantId: 
+vars:pre-request {
+  baseUrl: http://redline.vps.beardyinc.com
 }
 
 example {
