@@ -1,5 +1,6 @@
 package com.metaformsystems.redline.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.dao.Contract;
@@ -17,24 +18,27 @@ import com.metaformsystems.redline.service.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +46,7 @@ import java.util.Map;
  * Main API controller for the Redline UI
  */
 @RestController
-@RequestMapping("/api/ui")
+@RequestMapping(value = "/api/ui", produces = "application/json")
 @Tag(name = "Redline UI", description = "UI API for managing dataspaces, service providers, tenants, and participants")
 public class RedlineController {
     private final ServiceProviderService serviceProviderService;
@@ -96,7 +100,6 @@ public class RedlineController {
             @ApiResponse(responseCode = "404", description = "Service provider not found")
     })
     @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    @Parameter(name = "registration", description = "Tenant registration details", required = true)
     public ResponseEntity<TenantResource> registerTenant(
             @PathVariable Long serviceProviderId,
             @RequestBody NewTenantRegistration registration) {
@@ -195,11 +198,12 @@ public class RedlineController {
     public ResponseEntity<Void> uploadFile(@PathVariable Long participantId,
                                            @PathVariable Long tenantId,
                                            @PathVariable Long providerId,
-                                           @RequestPart("metadata") Map<String, Object> metadata,
+                                           @RequestPart("metadata") String metadata,
                                            @RequestPart("file") MultipartFile file) {
 
         try {
-            tenantService.uploadFileForParticipant(participantId, metadata, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
+            HashMap<String, Object> metadataMap = new ObjectMapper().readValue(metadata, HashMap.class);
+            tenantService.uploadFileForParticipant(participantId, metadataMap, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -232,7 +236,6 @@ public class RedlineController {
             @ApiResponse(responseCode = "400", description = "Invalid counter-party identifier"),
             @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found")
     })
-    @Parameter(name = "cacheControl", description = "Cache control directive", required = false)
     @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
     @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
