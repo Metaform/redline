@@ -34,6 +34,11 @@ springdoc:
 tenant-manager:
   url: ${TENANT_MANAGER_URL:http://localhost:8082}
 
+
+app:
+  cors:
+    allowed-origins: http://localhost:4200
+
 ---
 # Development Profile with H2
 spring:
