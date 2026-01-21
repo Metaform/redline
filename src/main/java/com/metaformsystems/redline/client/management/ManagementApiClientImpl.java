@@ -14,11 +14,13 @@
 
 package com.metaformsystems.redline.client.management;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaformsystems.redline.client.TokenProvider;
 import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.ContractAgreement;
 import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
+import com.metaformsystems.redline.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
@@ -164,14 +166,24 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
-    public void initiateContractNegotiation(String participantContextId, Map<String, Object> negotiationRequest) {
-        controlPlaneWebClient.post()
+    public String initiateContractNegotiation(String participantContextId, ContractRequest negotiationRequest) {
+
+        try {
+            var json = new ObjectMapper().writeValueAsString(negotiationRequest);
+            logger.info("Initiating contract negotiation: {}", json);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        var response = controlPlaneWebClient.post()
                 .uri("/v4alpha/participants/{participantContextId}/contractnegotiations", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(negotiationRequest)
                 .retrieve()
-                .bodyToMono(Void.class)
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                })
                 .block();
+
+        return response != null ? (String) response.get("@id") : null;
     }
 
     @Override

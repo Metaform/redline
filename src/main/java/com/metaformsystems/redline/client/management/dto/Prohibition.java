@@ -18,9 +18,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class Permission {
+public class Prohibition {
     @JsonProperty("@type")
-    private final String type = "permission";
+    private final String type = "prohibition";
     @JsonProperty("action")
     private String action;
     @JsonProperty("constraint")
