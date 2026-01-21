@@ -23,6 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -89,7 +90,7 @@ class WebDidResolverTest {
     void throwsOnNon200Response() throws Exception {
         var captor = ArgumentCaptor.forClass(HttpRequest.class);
         var resolver = resolverWithMockResponse(404, "{ }", captor);
-        assertThrows(RuntimeException.class, () -> resolver.resolveProtocolEndpoints("did:web:example.com"));
+        assertThat(resolver.resolveProtocolEndpoints("did:web:example.com")).isNull();
     }
 
     @Test
@@ -97,7 +98,7 @@ class WebDidResolverTest {
         HttpClient httpClient = mock(HttpClient.class);
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(new IOException("network"));
         var resolver = new WebDidResolver(httpClient, new ObjectMapper());
-        assertThrows(RuntimeException.class, () -> resolver.resolveProtocolEndpoints("did:web:example.com"));
+        assertThat(resolver.resolveProtocolEndpoints("did:web:example.com")).isNull();
     }
 
     @Test
