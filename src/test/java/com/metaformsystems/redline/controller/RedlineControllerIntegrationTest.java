@@ -186,7 +186,7 @@ class RedlineControllerIntegrationTest {
 
     @Test
     void shouldGetAllTenantsByServiceProvider() throws Exception {
-        // Create tenants
+        // Create tenants for the service provider
         var tenant1 = new Tenant();
         tenant1.setName("Tenant One");
         tenant1.setServiceProvider(serviceProvider);
@@ -206,6 +206,20 @@ class RedlineControllerIntegrationTest {
         participant2.setIdentifier("Participant Two");
         tenant2.addParticipant(participant2);
         participantRepository.save(participant2);
+
+        //create a tenant for another service provider
+        var otherServiceProvider = new ServiceProvider();
+        otherServiceProvider.setName("Other Provider");
+        otherServiceProvider = serviceProviderRepository.save(otherServiceProvider);
+        var otherTenant = new Tenant();
+        otherTenant.setName("Other Tenant");
+        otherTenant.setServiceProvider(otherServiceProvider);
+        tenantRepository.save(otherTenant);
+        var otherParticipant = new Participant();
+        otherParticipant.setIdentifier("Other Participant");
+        otherTenant.addParticipant(otherParticipant);
+        participantRepository.save(otherParticipant);
+
 
         mockMvc.perform(get("/api/ui/service-providers/{serviceProviderId}/tenants",
                         serviceProvider.getId()))
