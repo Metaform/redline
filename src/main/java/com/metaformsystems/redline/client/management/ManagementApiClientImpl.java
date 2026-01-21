@@ -30,6 +30,7 @@ import com.metaformsystems.redline.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.dao.DataplaneRegistration;
 import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.repository.ParticipantRepository;
+import com.metaformsystems.redline.service.ObjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -307,7 +308,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
     private String getToken(String participantContextId) {
         var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
-                .orElseThrow(() -> new IllegalArgumentException("Participant not found with context id: " + participantContextId));
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with context id: " + participantContextId));
 
         return tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
     }

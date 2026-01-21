@@ -16,10 +16,13 @@ package com.metaformsystems.redline.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -30,6 +33,7 @@ import java.util.List;
 @Component
 public class WebDidResolver {
 
+    private static final Logger log = LoggerFactory.getLogger(WebDidResolver.class);
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     @Value("${web.did.forceHttps:false}")
@@ -54,6 +58,9 @@ public class WebDidResolver {
     public String resolveProtocolEndpoints(String did) {
         var url = convertDidToUrl(did, forceHttps);
         var didDocument = fetchDidDocument(url);
+        if (didDocument == null) {
+            return null;
+        }
         var endpoints = extractProtocolEndpoints(didDocument);
         return endpoints.isEmpty() ? null : endpoints.getFirst();
     }
@@ -75,15 +82,18 @@ public class WebDidResolver {
                 .header("Accept", "application/json")
                 .build();
 
-        HttpResponse<String> response = null;
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
-                throw new RuntimeException("Failed to fetch DID document: HTTP " + response.statusCode());
+                log.error("Failed to fetch DID document, HTTP request {}: {}", url, response.body());
             }
             return objectMapper.readTree(response.body());
+        } catch (ConnectException e) {
+            log.error("Failed to resolve DID Web URL '{}' (ConnectException): {}", url, e.getMessage());
+            return null;
         } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to fetch DID document for url '{}': {}", url, e.getMessage());
+            return null;
         }
 
 
