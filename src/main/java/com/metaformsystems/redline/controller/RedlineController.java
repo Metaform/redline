@@ -2,6 +2,12 @@ package com.metaformsystems.redline.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaformsystems.redline.client.management.dto.Catalog;
+import com.metaformsystems.redline.client.management.dto.Constraint;
+import com.metaformsystems.redline.client.management.dto.ContractRequest;
+import com.metaformsystems.redline.client.management.dto.Obligation;
+import com.metaformsystems.redline.client.management.dto.Offer;
+import com.metaformsystems.redline.client.management.dto.Permission;
+import com.metaformsystems.redline.client.management.dto.Prohibition;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.dao.Contract;
 import com.metaformsystems.redline.dao.DataspaceResource;
@@ -13,6 +19,7 @@ import com.metaformsystems.redline.dao.ParticipantResource;
 import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.ServiceProviderResource;
 import com.metaformsystems.redline.dao.TenantResource;
+import com.metaformsystems.redline.model.ContractRequestDto;
 import com.metaformsystems.redline.service.ServiceProviderService;
 import com.metaformsystems.redline.service.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -300,5 +307,42 @@ public class RedlineController {
         return ResponseEntity.ok(contracts);
     }
 
-    
+
+    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts")
+    public ResponseEntity<String> requestContract(@PathVariable Long providerId,
+                                                  @PathVariable Long tenantId,
+                                                  @PathVariable Long participantId,
+                                                  @RequestBody ContractRequestDto contractRequest) {
+
+        var offer = Offer.Builder.anOffer()
+                .target(contractRequest.getAssetId())
+                .id(contractRequest.getOfferId())
+                .assigner(contractRequest.getProviderId());
+
+        if (contractRequest.getProhibitions() != null) {
+            var prohibition = new Prohibition();
+            prohibition.setConstraint(contractRequest.getProhibitions().stream().map(dto -> new Constraint(dto.leftOperand(), dto.operator(), dto.rightOperand())).toList());
+            offer.prohibition(List.of(prohibition));
+        }
+
+        if (contractRequest.getPermissions() != null) {
+            var permission = new Permission();
+            permission.setConstraint(contractRequest.getPermissions().stream().map(dto -> new Constraint(dto.leftOperand(), dto.operator(), dto.rightOperand())).toList());
+            offer.permission(List.of(permission));
+        }
+
+        if (contractRequest.getObligations() != null) {
+            var obligation = new Obligation();
+            obligation.setConstraint(contractRequest.getObligations().stream().map(dto -> new Constraint(dto.leftOperand(), dto.operator(), dto.rightOperand())).toList());
+            offer.obligation(List.of(obligation));
+        }
+
+        var request = ContractRequest.Builder.aContractRequest()
+                .providerId(contractRequest.getProviderId())
+                .policy(offer.build())
+                //counterparty address is left empty - the tenant service must resolve this from the DID
+                .build();
+
+        return ResponseEntity.ok(tenantService.initiateContractNegotiation(participantId, request));
+    }
 }

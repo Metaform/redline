@@ -45,4 +45,30 @@ public class Permission {
     public void setConstraint(List<Constraint> constraint) {
         this.constraint = constraint;
     }
+
+    public static final class Builder {
+        private final Permission permission;
+
+        private Builder() {
+            permission = new Permission();
+        }
+
+        public static Builder aPermission() {
+            return new Builder();
+        }
+
+        public Builder action(String action) {
+            permission.setAction(action);
+            return this;
+        }
+
+        public Builder constraint(List<Constraint> constraint) {
+            permission.setConstraint(constraint);
+            return this;
+        }
+
+        public Permission build() {
+            return permission;
+        }
+    }
 }

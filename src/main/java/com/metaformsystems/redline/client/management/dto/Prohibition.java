@@ -45,4 +45,30 @@ public class Prohibition {
     public void setConstraint(List<Constraint> constraint) {
         this.constraint = constraint;
     }
+
+    public static final class Builder {
+        private final Prohibition prohibition;
+
+        private Builder() {
+            prohibition = new Prohibition();
+        }
+
+        public static Builder aProhibition() {
+            return new Builder();
+        }
+
+        public Builder action(String action) {
+            prohibition.setAction(action);
+            return this;
+        }
+
+        public Builder constraint(List<Constraint> constraint) {
+            prohibition.setConstraint(constraint);
+            return this;
+        }
+
+        public Prohibition build() {
+            return prohibition;
+        }
+    }
 }

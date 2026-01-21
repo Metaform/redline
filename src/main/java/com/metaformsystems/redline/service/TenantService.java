@@ -5,6 +5,7 @@ import com.metaformsystems.redline.client.hashicorpvault.HashicorpVaultClient;
 import com.metaformsystems.redline.client.management.ManagementApiClient;
 import com.metaformsystems.redline.client.management.dto.Catalog;
 import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
+import com.metaformsystems.redline.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
@@ -74,12 +75,16 @@ public class TenantService {
     private final DataPlaneApiClient dataPlaneApiClient;
     private final ManagementApiClient managementApiClient;
     private final ConcurrentLruCache<LookupKey, CacheableEntry<Catalog>> catalogCache;
+    private final WebDidResolver webDidResolver;
 
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          ServiceProviderRepository serviceProviderRepository,
                          TenantManagerClient tenantManagerClient,
-                         HashicorpVaultClient vaultClient, DataPlaneApiClient dataPlaneApiClient, ManagementApiClient managementApiClient) {
+                         HashicorpVaultClient vaultClient,
+                         DataPlaneApiClient dataPlaneApiClient,
+                         ManagementApiClient managementApiClient,
+                         WebDidResolver webDidResolver) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.serviceProviderRepository = serviceProviderRepository;
@@ -87,6 +92,7 @@ public class TenantService {
         this.vaultClient = vaultClient;
         this.dataPlaneApiClient = dataPlaneApiClient;
         this.managementApiClient = managementApiClient;
+        this.webDidResolver = webDidResolver;
         this.catalogCache = new ConcurrentLruCache<>(100, key -> fetchCatalog(key.participantId(), key.did()));
     }
 
@@ -270,6 +276,7 @@ public class TenantService {
         // todo: do we need this?
         metadata.put("originalFilename", originalFilename);
         metadata.put("contentType", contentType);
+        metadata.put("assetId", asset.getId());
 
         var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
         var fileId = response.id();
@@ -323,6 +330,17 @@ public class TenantService {
 
         return negotiations.stream().map(cn -> getAgreement(participantContextId, cn))
                 .toList();
+    }
+
+    @Transactional
+    public String initiateContractNegotiation(Long providerId, ContractRequest request) {
+        var participant = participantRepository.findById(providerId)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found with id: " + providerId));
+
+        var did = request.getProviderId();
+        var addressFromDid = webDidResolver.resolveProtocolEndpoints(did);
+        request.setCounterPartyAddress(addressFromDid);
+        return managementApiClient.initiateContractNegotiation(participant.getParticipantContextId(), request);
     }
 
     private ContractNegotiation getAgreement(String participantContextId, ContractNegotiation negotiation) {

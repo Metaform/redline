@@ -45,4 +45,31 @@ public class Obligation {
     public void setConstraint(List<Constraint> constraint) {
         this.constraint = constraint;
     }
+
+
+    public static final class Builder {
+        private final Obligation obligation;
+
+        private Builder() {
+            obligation = new Obligation();
+        }
+
+        public static Builder anObligation() {
+            return new Builder();
+        }
+
+        public Builder action(String action) {
+            obligation.setAction(action);
+            return this;
+        }
+
+        public Builder constraint(List<Constraint> constraint) {
+            obligation.setConstraint(constraint);
+            return this;
+        }
+
+        public Obligation build() {
+            return obligation;
+        }
+    }
 }
