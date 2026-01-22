@@ -37,7 +37,7 @@ public class OAuth2TokenProvider implements TokenProvider {
                 .bodyToMono(TokenResponse.class)
                 .block();
 
-        return tokenResponse.accessToken();
+        return tokenResponse != null ? tokenResponse.accessToken() : null;
     }
 
     private record TokenResponse(@JsonProperty("access_token") String accessToken) {
