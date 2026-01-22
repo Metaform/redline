@@ -12,15 +12,10 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.domain.exception;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
+public class ObjectNotFoundException extends RuntimeException {
+    public ObjectNotFoundException(String message) {
+        super(message);
     }
 }

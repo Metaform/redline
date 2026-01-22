@@ -12,15 +12,9 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.infrastructure.client.dataplane.dto;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.Map;
 
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+public record UploadResponse(String id, String contentType, Map<String, Object> properties) {
 }

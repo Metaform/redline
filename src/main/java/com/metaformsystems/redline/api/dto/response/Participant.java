@@ -12,15 +12,16 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.api.dto.response;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.List;
 
-@SpringBootApplication
-public class RedlineApplication {
+/**
+ *
+ */
+public record Participant(Long id,
+                          String identifier,
+                          List<VirtualParticipantAgent> agents,
+                          List<DataspaceInfo> dataspaceInfos) {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
 }

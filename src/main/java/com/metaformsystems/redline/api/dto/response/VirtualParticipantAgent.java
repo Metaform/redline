@@ -12,15 +12,15 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.api.dto.response;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
+/**
+ *
+ */
+public record VirtualParticipantAgent(Long id, Type type, DeploymentState state) {
+    public enum Type {
+        CONTROL_PLANE,
+        CREDENTIAL_SERVICE,
+        DATA_PLANE
     }
 }

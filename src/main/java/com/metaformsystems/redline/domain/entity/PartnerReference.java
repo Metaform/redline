@@ -12,15 +12,13 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.domain.entity;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import jakarta.persistence.Embeddable;
 
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+/**
+ * A reference to a partner organization. The identifier is the participant identifier such as a DID.
+ */
+@Embeddable
+public record PartnerReference(String identifier, String nickname) {
 }
