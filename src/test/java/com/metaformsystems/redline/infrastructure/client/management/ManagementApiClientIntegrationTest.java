@@ -25,6 +25,8 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.Criterio
 import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Permission;
 import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
 import com.metaformsystems.redline.infrastructure.client.management.dto.QuerySpec;
 import okhttp3.mockwebserver.MockResponse;
@@ -330,6 +332,9 @@ class ManagementApiClientIntegrationTest {
                 .counterPartyAddress("http://provider.com/dsp")
                 .protocol("dataspace-protocol-http")
                 .providerId("provider-123")
+                .policy(Offer.Builder.anOffer()
+                        .permission(List.of(Permission.Builder.aPermission().build()))
+                        .build())
                 .build();
 
 
@@ -347,7 +352,11 @@ class ManagementApiClientIntegrationTest {
         var negotiationRequestRecorded = mockWebServer.takeRequest();
         assertThat(negotiationRequestRecorded.getPath()).contains("/contractnegotiations");
         assertThat(negotiationRequestRecorded.getHeader("Authorization")).isEqualTo("Bearer test-token");
-        assertThat(negotiationRequestRecorded.getBody().readUtf8()).contains("ContractRequest");
+        var body = negotiationRequestRecorded.getBody().readUtf8();
+        assertThat(body).contains("ContractRequest");
+        assertThat(body).doesNotContain("callbackAddresses");
+        assertThat(body).contains("\"use\"");
+
     }
 
     @Test
