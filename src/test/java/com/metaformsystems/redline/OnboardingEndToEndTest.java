@@ -14,28 +14,28 @@
 
 package com.metaformsystems.redline;
 
-import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
-import com.metaformsystems.redline.client.identityhub.IdentityHubClient;
-import com.metaformsystems.redline.client.management.ManagementApiClient;
-import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
-import com.metaformsystems.redline.client.management.dto.ContractRequest;
-import com.metaformsystems.redline.client.management.dto.Criterion;
-import com.metaformsystems.redline.client.management.dto.NewAsset;
-import com.metaformsystems.redline.client.management.dto.NewCelExpression;
-import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
-import com.metaformsystems.redline.client.management.dto.NewPolicyDefinition;
-import com.metaformsystems.redline.client.management.dto.Offer;
-import com.metaformsystems.redline.client.management.dto.PolicySet;
-import com.metaformsystems.redline.dao.DataplaneRegistration;
-import com.metaformsystems.redline.dao.NewDataspaceInfo;
-import com.metaformsystems.redline.dao.NewParticipantDeployment;
-import com.metaformsystems.redline.dao.NewTenantRegistration;
-import com.metaformsystems.redline.dao.NewTransferRequest;
-import com.metaformsystems.redline.model.Dataspace;
-import com.metaformsystems.redline.model.ServiceProvider;
-import com.metaformsystems.redline.repository.DataspaceRepository;
-import com.metaformsystems.redline.repository.ServiceProviderRepository;
-import com.metaformsystems.redline.service.TenantService;
+import com.metaformsystems.redline.api.dto.request.DataspaceInfo;
+import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
+import com.metaformsystems.redline.api.dto.request.TenantRegistration;
+import com.metaformsystems.redline.api.dto.request.TransferProcess;
+import com.metaformsystems.redline.domain.entity.Dataspace;
+import com.metaformsystems.redline.domain.entity.ServiceProvider;
+import com.metaformsystems.redline.domain.repository.DataspaceRepository;
+import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
+import com.metaformsystems.redline.domain.service.TenantService;
+import com.metaformsystems.redline.infrastructure.client.dataplane.DataPlaneApiClient;
+import com.metaformsystems.redline.infrastructure.client.identityhub.IdentityHubClient;
+import com.metaformsystems.redline.infrastructure.client.management.ManagementApiClient;
+import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
+import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Criterion;
+import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
+import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset;
+import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
+import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
+import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
+import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -224,7 +224,7 @@ public class OnboardingEndToEndTest {
 
 
         // initiate transfer
-        var rq = NewTransferRequest.Builder.aNewTransferRequest()
+        var rq = TransferProcess.Builder.aNewTransferRequest()
                 .counterPartyAddress(dspEndpointUrl)
                 .contractId(cn.get().getContractAgreementId())
                 .dataDestination(Map.of(
@@ -320,14 +320,14 @@ public class OnboardingEndToEndTest {
     @NotNull
     private ParticipantInfo onboardParticipant() {
         var slug = UUID.randomUUID().toString();
-        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
         var tenantName = "Test Tenant " + slug;
-        var registration = new NewTenantRegistration(tenantName, infos);
+        var registration = new TenantRegistration(tenantName, infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().getFirst();
 
         var webDid = "did:web:identityhub.edc-v.svc.cluster.local%3A7083:test-participant-" + slug;
-        var deployment = new NewParticipantDeployment(participant.id(), webDid);
+        var deployment = new ParticipantDeployment(participant.id(), webDid);
 
         // deploy the profile to CFM
         var result = tenantService.deployParticipant(deployment);

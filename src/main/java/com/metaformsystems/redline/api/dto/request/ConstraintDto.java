@@ -12,15 +12,8 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.api.dto.request;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+public record ConstraintDto(String leftOperand, String operator, String rightOperand) {
 
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
 }

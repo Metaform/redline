@@ -12,15 +12,18 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.domain.entity;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+/**
+ * Tracks the state of a resource deployment.
+ */
+public enum DeploymentState {
+    INITIAL,
+    PENDING,
+    ACTIVE,
+    DISPOSING,
+    DISPOSED,
+    LOCKED,
+    OFFLINE,
+    ERROR
 }

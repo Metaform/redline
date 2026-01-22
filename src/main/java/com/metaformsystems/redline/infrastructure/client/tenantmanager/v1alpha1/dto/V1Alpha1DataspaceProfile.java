@@ -1,0 +1,14 @@
+package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto;
+
+import java.util.List;
+import java.util.Map;
+
+public record V1Alpha1DataspaceProfile(
+        String id,
+        Long version,
+        V1Alpha1DataspaceSpec dataspaceSpec,
+        List<String> artifacts,
+        List<V1Alpha1DataspaceDeployment> deployments,
+        Map<String, Object> properties
+) {
+}

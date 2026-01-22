@@ -12,15 +12,10 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.api.dto.response;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+/**
+ *
+ */
+public record Dataspace(Long id, String name) {
 }

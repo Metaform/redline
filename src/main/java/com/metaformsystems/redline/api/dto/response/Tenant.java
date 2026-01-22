@@ -12,15 +12,14 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.api.dto.response;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.List;
+import java.util.Map;
 
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+/**
+ *
+ */
+public record Tenant(Long id, Long providerId, String name, List<Participant> participants,
+                     Map<String, Object> properties) {
 }

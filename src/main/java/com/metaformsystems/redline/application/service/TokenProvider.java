@@ -12,15 +12,8 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.application.service;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+public interface TokenProvider {
+    String getToken(String clientId, String clientSecret, String scopes);
 }

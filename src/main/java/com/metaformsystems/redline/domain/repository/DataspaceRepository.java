@@ -12,15 +12,12 @@
  *
  */
 
-package com.metaformsystems.redline;
+package com.metaformsystems.redline.domain.repository;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.metaformsystems.redline.domain.entity.Dataspace;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-@SpringBootApplication
-public class RedlineApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RedlineApplication.class, args);
-    }
+@Repository
+public interface DataspaceRepository extends JpaRepository<Dataspace, Long> {
 }
