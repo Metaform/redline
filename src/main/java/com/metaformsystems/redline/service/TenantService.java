@@ -341,13 +341,24 @@ public class TenantService {
         var participant = participantRepository.findById(providerId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + providerId));
 
-        var did = request.getProviderId();
-        var addressFromDid = webDidResolver.resolveProtocolEndpoints(did);
-        if (addressFromDid == null) {
-            throw new IllegalArgumentException("Could not resolve protocol endpoint from DID: " + did);
+        if (request.getCounterPartyAddress() == null) {
+            log.info("Counter party address not provided, resolving from DID: {}", request.getProviderId());
+            var did = request.getProviderId();
+            var addressFromDid = webDidResolver.resolveProtocolEndpoints(did);
+            if (addressFromDid == null) {
+                throw new IllegalArgumentException("Could not resolve protocol endpoint from DID: " + did);
+            }
+            request.setCounterPartyAddress(addressFromDid);
         }
-        request.setCounterPartyAddress(addressFromDid);
+
         return managementApiClient.initiateContractNegotiation(participant.getParticipantContextId(), request);
+    }
+
+    @Transactional
+    public ContractNegotiation getContractNegotiation(Long participantId, String contractId) {
+        var participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        return managementApiClient.getContractNegotiation(participant.getParticipantContextId(), contractId);
     }
 
     private ContractNegotiation getAgreement(String participantContextId, ContractNegotiation negotiation) {

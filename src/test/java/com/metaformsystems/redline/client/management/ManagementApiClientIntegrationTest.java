@@ -356,8 +356,8 @@ class ManagementApiClientIntegrationTest {
         var result = managementApiClient.getContractNegotiation(participantContextId, negotiationId);
 
         // Assert
-        assertThat(result).containsEntry("@id", "negotiation-123");
-        assertThat(result).containsEntry("state", "FINALIZED");
+        assertThat(result.getId()).isEqualTo("negotiation-123");
+        assertThat(result.getState()).isEqualTo("FINALIZED");
 
 
         var getRequest = mockWebServer.takeRequest();

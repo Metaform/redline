@@ -54,7 +54,7 @@ public interface ManagementApiClient {
     // Contract Negotiations
     String initiateContractNegotiation(String participantContextId, ContractRequest negotiationRequest);
 
-    Map<String, Object> getContractNegotiation(String participantContextId, String negotiationId);
+    ContractNegotiation getContractNegotiation(String participantContextId, String negotiationId);
 
     List<Map<String, Object>> queryContractNegotiations(String participantContextId, QuerySpec query);
 

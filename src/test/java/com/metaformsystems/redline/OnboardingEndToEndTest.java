@@ -179,18 +179,20 @@ public class OnboardingEndToEndTest {
         // now acting as the consumer, getting the provider's catalog
         var catalog = tenantService.requestCatalog(consumerInfo.id(), providerInfo.webDid(), "no-cache");
 
-        // get the asset with id "todo_asset"
+        // get the asset with negotiationId "todo_asset"
         var dataset = catalog.getDataset().stream().filter(ds -> ds.getId().equals(todoAssetId)).findFirst().orElseThrow();
         var offers = dataset.getHasPolicy();
 
         var first = offers.getFirst();
         var policyId = first.getId();
+        var dspEndpointUrl = catalog.getService().getFirst().getEndpointUrl();
         assertThat(policyId).isNotNull();
+        assertThat(dspEndpointUrl).isNotNull();
 
         // start transfer using the all-in-one API from JAD
         var cr = ContractRequest.Builder.aContractRequest()
                 .providerId(providerInfo.webDid())
-                .counterPartyAddress("foobar")
+                .counterPartyAddress(dspEndpointUrl)
                 .callbackAddresses(Set.of())
                 .policy(Offer.Builder.anOffer()
                         .id(policyId)
@@ -201,8 +203,21 @@ public class OnboardingEndToEndTest {
                         .target(todoAssetId)
                         .build())
                 .build();
-        var id = managementApiClient.initiateContractNegotiation(consumerInfo.contextId(), cr);
-        assertThat(id).isNotNull();
+        var negotiationId = tenantService.initiateContractNegotiation(consumerInfo.id(), cr);
+        assertThat(negotiationId).isNotNull();
+
+        var cn = tenantService.getContractNegotiation(consumerInfo.id(), negotiationId);
+        assertThat(cn).isNotNull();
+        assertThat(cn.getContractAgreementId()).isNull();
+
+        await().atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofSeconds(1))
+                .untilAsserted(() -> {
+                    var updatedCn = tenantService.getContractNegotiation(consumerInfo.id(), negotiationId);
+                    assertThat(updatedCn.getContractAgreementId()).isNotNull();
+                    assertThat(updatedCn.getState()).isEqualTo("FINALIZED");
+                });
+
     }
 
     @Test

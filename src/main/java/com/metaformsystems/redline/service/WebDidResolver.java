@@ -71,7 +71,8 @@ public class WebDidResolver {
         }
 
         var identifier = did.substring("did:web:".length());
-        var path = identifier.replace(":", "/");
+        var path = identifier.replace(":", "/")
+                .replace("%3A", ":");
         return (forceHttps ? "https://" : "http://") + path + "/.well-known/did.json";
     }
 
