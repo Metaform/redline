@@ -24,6 +24,7 @@ import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.client.management.dto.QuerySpec;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.client.management.dto.TransferRequest;
 import com.metaformsystems.redline.dao.DataplaneRegistration;
 
 import java.util.List;
@@ -61,6 +62,20 @@ public interface ManagementApiClient {
     // CEL expressions
     void createCelExpression(NewCelExpression celExpression);
 
+    // TransferProcess
+
+    /**
+     * @deprecated don't use this, as this is only available in JAD
+     */
+    @Deprecated
+    Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId);
+
+    List<TransferProcess> listTransferProcesses(String participantContextId);
+
+    String initiateTransferProcess(String participantContextId, TransferRequest request);
+
+    TransferProcess getTransferProcess(String participantContextId, String transferProcessId);
+
     // Catalog
     Catalog getCatalog(String participantContextId, String counterPartyId);
 
@@ -69,9 +84,6 @@ public interface ManagementApiClient {
 
     Object getData(String participantContextId, String counterPartyId, String offerId);
 
-    Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId);
-
-    List<TransferProcess> listTransferProcesses(String participantContextId);
 
     List<ContractNegotiation> listContracts(String participantContextId);
 

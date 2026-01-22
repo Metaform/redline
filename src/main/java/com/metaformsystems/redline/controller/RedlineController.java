@@ -15,6 +15,7 @@ import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewServiceProvider;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
+import com.metaformsystems.redline.dao.NewTransferRequest;
 import com.metaformsystems.redline.dao.ParticipantResource;
 import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.ServiceProviderResource;
@@ -401,5 +402,33 @@ public class RedlineController {
                 .build();
 
         return ResponseEntity.ok(dto);
+    }
+
+
+    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers")
+    @Operation(summary = "Initiate a transfer process", description = "Triggers a transfer process with a counter-party based on the provided contract agreement details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transfer process started successfully."),
+            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
+    @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
+    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
+    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
+    public ResponseEntity<String> requestTransfer(@PathVariable Long providerId,
+                                                  @PathVariable Long tenantId,
+                                                  @PathVariable Long participantId,
+                                                  @RequestBody NewTransferRequest transferRequest) {
+
+        return ResponseEntity.ok(tenantService.initiateTransferProcess(providerId, transferRequest));
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers/{transferProcessId}")
+    public ResponseEntity<TransferProcess> getTransferProcess(@PathVariable Long providerId,
+                                                              @PathVariable Long tenantId,
+                                                              @PathVariable Long participantId,
+                                                              @PathVariable String transferProcessId) {
+        var transferProcess = tenantService.getTransferProcess(participantId, transferProcessId);
+        return ResponseEntity.ok(transferProcess);
     }
 }
