@@ -1,0 +1,277 @@
+/*
+ *  Copyright (c) 2026 Metaform Systems, Inc.
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Metaform Systems, Inc. - initial API and implementation
+ *
+ */
+
+package com.metaformsystems.redline.domain.service;
+
+import com.metaformsystems.redline.api.dto.request.TransferProcess;
+import com.metaformsystems.redline.api.dto.response.FileResource;
+import com.metaformsystems.redline.domain.entity.UploadedFile;
+import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
+import com.metaformsystems.redline.domain.repository.ParticipantRepository;
+import com.metaformsystems.redline.infrastructure.client.dataplane.DataPlaneApiClient;
+import com.metaformsystems.redline.infrastructure.client.management.ManagementApiClient;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
+import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
+import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
+import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ConcurrentLruCache;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+import static com.metaformsystems.redline.domain.service.Constants.ASSET_PERMISSION;
+import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_CONTRACT_DEFINITION;
+import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_EXPRESSION;
+import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_EXPRESSION_ID;
+import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_POLICY;
+
+@Service
+public class DataAccessService {
+    private static final Logger log = LoggerFactory.getLogger(DataAccessService.class);
+    private final DataPlaneApiClient dataPlaneApiClient;
+    private final ConcurrentLruCache<LookupKey, CacheableEntry<Catalog>> catalogCache;
+    private final WebDidResolver webDidResolver;
+    private final ParticipantRepository participantRepository;
+    private final ManagementApiClient managementApiClient;
+
+    public DataAccessService(DataPlaneApiClient dataPlaneApiClient, WebDidResolver webDidResolver, ParticipantRepository participantRepository, ManagementApiClient managementApiClient) {
+        this.dataPlaneApiClient = dataPlaneApiClient;
+        this.participantRepository = participantRepository;
+        this.managementApiClient = managementApiClient;
+        this.catalogCache = new ConcurrentLruCache<>(100, key -> fetchCatalog(key.participantId(), key.did()));
+        this.webDidResolver = webDidResolver;
+    }
+
+    @Transactional
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> metadata, InputStream fileStream, String contentType, String originalFilename) {
+
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        //1. create asset
+        var participantContextId = participant.getParticipantContextId();
+        var asset = createAsset(metadata, contentType, originalFilename);
+        managementApiClient.createAsset(participantContextId, asset);
+
+        // create CEL expression
+        try {
+            managementApiClient.createCelExpression(CelExpression.Builder.aNewCelExpression()
+                    .id(MEMBERSHIP_EXPRESSION_ID)
+                    .leftOperand("MembershipCredential")
+                    .description("Expression for evaluating membership credential")
+                    .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
+                    .expression(MEMBERSHIP_EXPRESSION)
+                    .build());
+        } catch (WebClientResponseException.Conflict e) {
+            //do nothing, CEL expression already exists
+        }
+
+        //2. create policy
+        var policy = MEMBERSHIP_POLICY;
+        try {
+            managementApiClient.createPolicy(participantContextId, policy);
+        } catch (WebClientResponseException.Conflict e) {
+            // do nothing, policy already exists
+            log.info("Policy already exists: {}", policy.getId());
+        }
+
+        //3. create contract definition if none exists
+        try {
+            managementApiClient.createContractDefinition(participantContextId, MEMBERSHIP_CONTRACT_DEFINITION);
+        } catch (WebClientResponseException.Conflict e) {
+            // do nothing, contract definition already exists
+            log.info("Contract Definition already exists: {}", policy.getId());
+        }
+
+        //4. upload file to data plane
+        // todo: do we need this?
+        metadata.put("originalFilename", originalFilename);
+        metadata.put("contentType", contentType);
+        metadata.put("assetId", asset.getId());
+
+        var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
+        var fileId = response.id();
+
+        //2. track uploaded file in DB
+        participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType, metadata));
+    }
+
+    @Transactional
+    public List<FileResource> listFilesForParticipant(Long participantId) {
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        return participant.getUploadedFiles().stream()
+                .map(f -> new FileResource(f.getFileId(), f.getOriginalFilename(), f.getContentType(), f.getCreatedAt().toString(), f.getMetadata()))
+                .toList();
+    }
+
+    @Transactional
+    public Catalog requestCatalog(Long participantId, String counterPartyIdentifier, String cacheControl) {
+
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+
+        var key = new LookupKey(participant.getParticipantContextId(), counterPartyIdentifier);
+        var catalogEntry = catalogCache.get(key);
+        //todo: check if expired or must be reloaded
+        if (isExpired(catalogEntry, cacheControl)) {
+            log.info("Catalog cache expired or no-cache requested for participant {} and counterparty {}", participantId, counterPartyIdentifier);
+
+            // removing and re-getting forces a cache update, i.e., reading the remote catalog again
+            catalogCache.remove(key);
+            return catalogCache.get(key).value();
+        }
+
+        return catalogEntry.value();
+    }
+
+    @Transactional
+    public List<com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess> listTransferProcesses(Long participantId) {
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        var participantContextId = participant.getParticipantContextId();
+        return managementApiClient.listTransferProcesses(participantContextId);
+    }
+
+    @Transactional
+    public List<ContractNegotiation> listContracts(Long participantId) {
+        var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        var participantContextId = participant.getParticipantContextId();
+
+        var negotiations = managementApiClient.listContracts(participantContextId);
+
+        return negotiations.stream().map(cn -> getAgreement(participantContextId, cn))
+                .toList();
+    }
+
+    @Transactional
+    public String initiateContractNegotiation(Long providerId, ContractRequest request) {
+        var participant = participantRepository.findById(providerId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + providerId));
+
+        if (request.getCounterPartyAddress() == null) {
+            log.info("Counter party address not provided, resolving from DID: {}", request.getProviderId());
+            var did = request.getProviderId();
+            var addressFromDid = webDidResolver.resolveProtocolEndpoints(did);
+            if (addressFromDid == null) {
+                throw new IllegalArgumentException("Could not resolve protocol endpoint from DID: " + did);
+            }
+            request.setCounterPartyAddress(addressFromDid);
+        }
+
+        return managementApiClient.initiateContractNegotiation(participant.getParticipantContextId(), request);
+    }
+
+    @Transactional
+    public ContractNegotiation getContractNegotiation(Long participantId, String contractId) {
+        var participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        return managementApiClient.getContractNegotiation(participant.getParticipantContextId(), contractId);
+    }
+
+    public String initiateTransferProcess(Long providerId, TransferProcess transferRequest) {
+        var participantContextId = getContextId(providerId);
+
+        var rq = TransferRequest.Builder.aTransferRequest()
+                .counterPartyAddress(transferRequest.getCounterPartyAddress())
+                .transferType(transferRequest.getTransferType())
+                .contractId(transferRequest.getContractId())
+                .dataDestination(transferRequest.getDataDestination())
+                .build();
+
+        return managementApiClient.initiateTransferProcess(participantContextId, rq);
+    }
+
+    public com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
+        return managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
+    }
+
+    private CacheableEntry<Catalog> fetchCatalog(String participantId, String did) {
+        return new CacheableEntry<>(managementApiClient.getCatalog(participantId, did), Instant.now());
+    }
+
+    /**
+     * Determines if cache entry requires refresh according to the cacheControl value
+     */
+    private boolean isExpired(CacheableEntry<Catalog> entry, String cacheControl) {
+        if (entry == null) return true;
+        if (!StringUtils.hasText(cacheControl)) return false;
+
+        if (cacheControl.contains("no-cache") || cacheControl.contains("no-store")) {
+            return true;
+        }
+
+        // Parse max-age
+        var maxAgeMatch = Pattern.compile("max-age=(\\d+)").matcher(cacheControl);
+        if (maxAgeMatch.find()) {
+            long maxAgeSeconds = Long.parseLong(maxAgeMatch.group(1));
+            return entry.timestamp().plus(Duration.ofSeconds(maxAgeSeconds)).isBefore(Instant.now());
+        }
+
+        return false;
+    }
+
+
+    private String getContextId(Long providerId) {
+        var participant = participantRepository.findById(providerId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + providerId));
+        return participant.getParticipantContextId();
+    }
+
+    private ContractNegotiation getAgreement(String participantContextId, ContractNegotiation negotiation) {
+        if (negotiation.getContractAgreementId() != null) {
+            var agreement = managementApiClient.getAgreement(participantContextId, negotiation.getId());
+            negotiation.setContractAgreement(agreement);
+        }
+        return negotiation;
+    }
+
+    private Asset createAsset(Map<String, Object> metadata, String contentType, String originalFilename) {
+
+        var privateProperties = new HashMap<String, Object>(Map.of("permission", ASSET_PERMISSION));
+        privateProperties.putAll(metadata);
+
+        return Asset.Builder.aNewAsset()
+                .id(UUID.randomUUID().toString())
+                .dataAddress(Map.of(
+                        "type", "HttpCertData",
+                        "@type", "DataAddress"
+                ))
+                .privateProperties(privateProperties)
+                .properties(Map.of(
+                        "description", "A file uploaded by Redline on " + Instant.now().toString(),
+                        "contentType", contentType,
+                        "originalFilename", originalFilename
+                ))
+                .build();
+    }
+
+    private record CacheableEntry<T>(T value, Instant timestamp) {
+
+    }
+
+    private record LookupKey(String participantId, String did) {
+
+    }
+}

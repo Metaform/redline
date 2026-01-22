@@ -19,21 +19,15 @@ import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
 import com.metaformsystems.redline.api.dto.response.VirtualParticipantAgent;
 import com.metaformsystems.redline.application.service.TokenProvider;
-import com.metaformsystems.redline.domain.entity.ClientCredentials;
 import com.metaformsystems.redline.domain.entity.Dataspace;
 import com.metaformsystems.redline.domain.entity.Participant;
 import com.metaformsystems.redline.domain.entity.PartnerReference;
 import com.metaformsystems.redline.domain.entity.ServiceProvider;
 import com.metaformsystems.redline.domain.entity.Tenant;
-import com.metaformsystems.redline.domain.entity.UploadedFile;
 import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.domain.repository.TenantRepository;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
-import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Obligation;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -52,7 +46,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.metaformsystems.redline.TestData.PARTICIPANT_PROFILE_RESPONSE;
@@ -60,7 +53,6 @@ import static com.metaformsystems.redline.TestData.VAULT_CREDENTIAL_RESPONSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -475,191 +467,4 @@ class TenantServiceIntegrationTest {
         assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") && ref.nickname().equals("Partner Two"));
     }
 
-    @Test
-    void shouldRequestCatalog_andCacheIt() throws InterruptedException {
-
-        var participant = createAndSaveParticipant("ctx-1", "did:web:me");
-        var counterParty = "did:web:them";
-
-        // First call: Expect fetch from remote
-        mockWebServer.enqueue(new MockResponse()
-                .setBody(CATALOG_RESPONSE)
-                .addHeader("Content-Type", "application/json"));
-
-
-        var catalog1 = tenantService.requestCatalog(participant.getId(), counterParty, "max-age=3600");
-        var catalog2 = tenantService.requestCatalog(participant.getId(), counterParty, "max-age=3600");
-
-
-        assertThat(catalog1).isNotNull();
-        assertThat(catalog2).isNotNull();
-        // only 1 catalog request, second one is cached
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(1);
-    }
-
-    @Test
-    void shouldRequestCatalog_andBypassCacheWithNoCache() {
-        var participant = createAndSaveParticipant("ctx-2", "did:web:me");
-        var counterParty = "did:web:them";
-
-        mockWebServer.enqueue(new MockResponse().setBody(CATALOG_RESPONSE).addHeader("Content-Type", "application/json"));
-        mockWebServer.enqueue(new MockResponse().setBody(CATALOG_RESPONSE).addHeader("Content-Type", "application/json"));
-
-        tenantService.requestCatalog(participant.getId(), counterParty, "max-age=3600");
-        tenantService.requestCatalog(participant.getId(), counterParty, "no-cache");
-
-        // both requests hit the remote catalog, no cache
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldRequestCatalog_andRefreshWhenMaxAgeIsZero() {
-        var participant = createAndSaveParticipant("ctx-3", "did:web:me");
-        var counterParty = "did:web:them";
-
-        mockWebServer.enqueue(new MockResponse().setBody(CATALOG_RESPONSE).addHeader("Content-Type", "application/json"));
-        mockWebServer.enqueue(new MockResponse().setBody(CATALOG_RESPONSE).addHeader("Content-Type", "application/json"));
-
-        tenantService.requestCatalog(participant.getId(), counterParty, "max-age=3600");
-        // max-age=0 should trigger expiration check effectively immediately or force refresh logic
-        tenantService.requestCatalog(participant.getId(), counterParty, "max-age=0");
-
-        assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
-    }
-
-    @Test
-    void shouldListContracts() throws InterruptedException {
-        var participant = createAndSaveParticipant("ctx-4", "did:web:me");
-
-        var contractsResponse = """
-                [
-                    {
-                        "@id": "negotiation-1",
-                        "@type": "ContractNegotiation",
-                        "type": "CONSUMER",
-                        "state": "FINALIZED",
-                        "counterPartyId": "did:web:provider",
-                        "counterPartyAddress": "http://provider.example.com/api/dsp",
-                        "contractAgreementId": "agreement-1"
-                    },
-                    {
-                        "@id": "negotiation-2",
-                        "@type": "ContractNegotiation",
-                        "type": "PROVIDER",
-                        "state": "REQUESTED",
-                        "counterPartyId": "did:web:consumer",
-                        "counterPartyAddress": "http://consumer.example.com/api/dsp"
-                    }
-                ]
-                """;
-
-        var agreementResponse = """
-                {
-                    "@id": "agreement-1",
-                    "@type": "ContractAgreement",
-                    "providerId": "did:web:provider",
-                    "consumerId": "did:web:consumer",
-                    "assetId": "asset-1",
-                    "policy": {
-                        "@type": "Policy"
-                    }
-                }
-                """;
-
-        mockWebServer.enqueue(new MockResponse().setBody(contractsResponse).addHeader("Content-Type", "application/json"));
-        mockWebServer.enqueue(new MockResponse().setBody(agreementResponse).addHeader("Content-Type", "application/json"));
-
-        var result = tenantService.listContracts(participant.getId());
-
-        assertThat(result).hasSize(2);
-        assertThat(result).anyMatch(cn -> cn.getId().equals("negotiation-1") && cn.getState().equals("FINALIZED"));
-        assertThat(result).anyMatch(cn -> cn.getId().equals("negotiation-2") && cn.getState().equals("REQUESTED"));
-        assertThat(result.stream().filter(cn -> cn.getId().equals("negotiation-1")).findFirst().orElseThrow().getContractAgreement()).isNotNull();
-        assertThat(result.stream().filter(cn -> cn.getId().equals("negotiation-2")).findFirst().orElseThrow().getContractAgreement()).isNull();
-
-        var contractsRequest = mockWebServer.takeRequest();
-        assertThat(contractsRequest.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-4/contractnegotiations/request");
-        assertThat(contractsRequest.getMethod()).isEqualTo("POST");
-
-        var agreementRequest = mockWebServer.takeRequest();
-        assertThat(agreementRequest.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-4/contractnegotiations/negotiation-1/agreement");
-        assertThat(agreementRequest.getMethod()).isEqualTo("GET");
-
-    }
-
-    @Test
-    void shouldListFiles() {
-        var participant = createAndSaveParticipant("ctx-5", "did:web:me");
-
-        participant.setUploadedFiles(new ArrayList<>(List.of(
-                new UploadedFile("file-id-1", "foobar.jpg", "image/jpeg", Map.of("bar", "baz")),
-                new UploadedFile("file-id-2", "barbaz.pdf", "application/pdf", Map.of("quizz", "qazz"))
-        )));
-
-        participant = participantRepository.save(participant);
-
-        var result = tenantService.listFilesForParticipant(participant.getId());
-
-        assertThat(result).hasSize(2);
-        assertThat(result).anyMatch(f -> f.fileId().equals("file-id-1") &&
-                f.fileName().equals("foobar.jpg") &&
-                f.contentType().equals("image/jpeg") &&
-                f.metadata().get("bar").equals("baz"));
-        assertThat(result).anyMatch(f -> f.fileId().equals("file-id-2") &&
-                f.fileName().equals("barbaz.pdf") &&
-                f.contentType().equals("application/pdf") &&
-                f.metadata().get("quizz").equals("qazz"));
-    }
-
-    @Test
-    void shouldInitiateContractNegotiation() throws InterruptedException {
-        var participant = createAndSaveParticipant("ctx-6", "did:web:me");
-        var providerId = "did:web:provider";
-        var assetId = "asset-123";
-        var offerId = "offer-456";
-
-        when(webDidResolver.resolveProtocolEndpoints(eq(providerId)))
-                .thenReturn("http://provider.example.com/api/dsp");
-
-        var contractRequest = ContractRequest.Builder.aContractRequest()
-                .providerId(providerId)
-                .policy(Offer.Builder.anOffer()
-                        .id(offerId)
-                        .target(assetId)
-                        .assigner(providerId)
-                        .obligation(List.of(Obligation.Builder.anObligation()
-                                .action("use")
-                                .constraint(List.of(new Constraint("foo", "=", "bar")))
-                                .build()))
-                        .build())
-                .build();
-
-        mockWebServer.enqueue(new MockResponse()
-                .setBody("{ \"@id\": \"negotiation-123\"}")
-                .addHeader("Content-Type", "application/json"));
-
-        var result = tenantService.initiateContractNegotiation(participant.getId(), contractRequest);
-
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo("negotiation-123");
-
-        var request = mockWebServer.takeRequest();
-        assertThat(request.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-6/contractnegotiations");
-        assertThat(request.getMethod()).isEqualTo("POST");
-    }
-
-
-    private Participant createAndSaveParticipant(String contextId, String identifier) {
-        var p = new Participant();
-        p.setParticipantContextId(contextId);
-        p.setIdentifier(identifier);
-        p.setClientCredentials(new ClientCredentials("client-id", "client-secret"));
-        p.setTenant(serviceProvider.getTenants().stream().findFirst().orElseGet(() -> {
-            var t = new Tenant();
-            t.setName("Test");
-            t.setServiceProvider(serviceProvider);
-            return tenantRepository.save(t);
-        }));
-        return participantRepository.save(p);
-    }
 }

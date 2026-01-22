@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-public class NewAsset {
+public class Asset {
     @JsonProperty("@context")
     private final String[] context = new String[]{
             "https://w3id.org/edc/connector/management/v2",
@@ -76,10 +76,10 @@ public class NewAsset {
 
 
     public static final class Builder {
-        private final NewAsset newAsset;
+        private final Asset asset;
 
         private Builder() {
-            newAsset = new NewAsset();
+            asset = new Asset();
         }
 
         public static Builder aNewAsset() {
@@ -87,27 +87,27 @@ public class NewAsset {
         }
 
         public Builder id(String id) {
-            newAsset.setId(id);
+            asset.setId(id);
             return this;
         }
 
         public Builder properties(Map<String, Object> properties) {
-            newAsset.setProperties(properties);
+            asset.setProperties(properties);
             return this;
         }
 
         public Builder privateProperties(Map<String, Object> privateProperties) {
-            newAsset.setPrivateProperties(privateProperties);
+            asset.setPrivateProperties(privateProperties);
             return this;
         }
 
         public Builder dataAddress(Map<String, Object> dataAddress) {
-            newAsset.setDataAddress(dataAddress);
+            asset.setDataAddress(dataAddress);
             return this;
         }
 
-        public NewAsset build() {
-            return newAsset;
+        public Asset build() {
+            return asset;
         }
     }
 }

@@ -20,6 +20,7 @@ import com.metaformsystems.redline.api.dto.request.TransferProcess;
 import com.metaformsystems.redline.api.dto.response.Contract;
 import com.metaformsystems.redline.api.dto.response.ContractNegotiation;
 import com.metaformsystems.redline.api.dto.response.FileResource;
+import com.metaformsystems.redline.domain.service.DataAccessService;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
@@ -27,7 +28,6 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.Obligati
 import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Permission;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Prohibition;
-import com.metaformsystems.redline.domain.service.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -56,12 +56,12 @@ import java.util.List;
 @Tag(name = "EDC data operations", description = "UI API for uploading and downloading data, managing EDC data transfers, and related operations")
 @RequestMapping(value = "/api/ui", produces = "application/json")
 public class EdcDataController {
-    private final TenantService tenantService;
 
-    public EdcDataController(TenantService tenantService) {
-        this.tenantService = tenantService;
+    private final DataAccessService dataAccessService;
+
+    public EdcDataController(DataAccessService dataAccessService) {
+        this.dataAccessService = dataAccessService;
     }
-
 
     @PostMapping(path = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files", consumes = "multipart/form-data")
 //    @PreAuthorize("hasRole('USER')")
@@ -83,7 +83,7 @@ public class EdcDataController {
 
         try {
             HashMap<String, Object> metadataMap = new ObjectMapper().readValue(metadata, HashMap.class);
-            tenantService.uploadFileForParticipant(participantId, metadataMap, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
+            dataAccessService.uploadFileForParticipant(participantId, metadataMap, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -104,7 +104,7 @@ public class EdcDataController {
     public ResponseEntity<List<FileResource>> listFiles(@PathVariable Long participantId,
                                                         @PathVariable Long tenantId,
                                                         @PathVariable Long providerId) {
-        var files = tenantService.listFilesForParticipant(participantId);
+        var files = dataAccessService.listFilesForParticipant(participantId);
         return ResponseEntity.ok(files);
     }
 
@@ -126,7 +126,7 @@ public class EdcDataController {
                                                   @PathVariable Long participantId,
                                                   @RequestParam String counterPartyIdentifier) {
 
-        var catalog = tenantService.requestCatalog(participantId, counterPartyIdentifier, cacheControl);
+        var catalog = dataAccessService.requestCatalog(participantId, counterPartyIdentifier, cacheControl);
         return ResponseEntity.ok(catalog);
     }
 
@@ -145,7 +145,7 @@ public class EdcDataController {
     public ResponseEntity<List<com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess>> listTransferProcesses(@PathVariable Long providerId,
                                                                                                                                         @PathVariable Long tenantId,
                                                                                                                                         @PathVariable Long participantId) {
-        return ResponseEntity.ok(tenantService.listTransferProcesses(participantId));
+        return ResponseEntity.ok(dataAccessService.listTransferProcesses(participantId));
     }
 
     @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts")
@@ -162,7 +162,7 @@ public class EdcDataController {
     public ResponseEntity<List<Contract>> listContracts(@PathVariable Long providerId,
                                                         @PathVariable Long tenantId,
                                                         @PathVariable Long participantId) {
-        var contractNegotiations = tenantService.listContracts(participantId);
+        var contractNegotiations = dataAccessService.listContracts(participantId);
         var contracts = contractNegotiations.stream().map(cn -> {
             var builder = Contract.Builder.aContract()
                     .counterParty(cn.getCounterPartyId())
@@ -227,7 +227,7 @@ public class EdcDataController {
                 //counterparty address is left empty - the tenant service must resolve this from the DID
                 .build();
 
-        return ResponseEntity.ok(tenantService.initiateContractNegotiation(participantId, request));
+        return ResponseEntity.ok(dataAccessService.initiateContractNegotiation(participantId, request));
     }
 
     @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts/{contractNegotiationId}")
@@ -246,7 +246,7 @@ public class EdcDataController {
                                                                       @PathVariable Long tenantId,
                                                                       @PathVariable Long participantId,
                                                                       @PathVariable String contractNegotiationId) {
-        var contractNegotiation = tenantService.getContractNegotiation(participantId, contractNegotiationId);
+        var contractNegotiation = dataAccessService.getContractNegotiation(participantId, contractNegotiationId);
 
         var dto = ContractNegotiation.Builder.aContractNegotiationDto()
                 .id(contractNegotiation.getId())
@@ -280,7 +280,7 @@ public class EdcDataController {
                                                   @PathVariable Long participantId,
                                                   @RequestBody TransferProcess transferRequest) {
 
-        return ResponseEntity.ok(tenantService.initiateTransferProcess(providerId, transferRequest));
+        return ResponseEntity.ok(dataAccessService.initiateTransferProcess(providerId, transferRequest));
     }
 
     @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers/{transferProcessId}")
@@ -288,7 +288,7 @@ public class EdcDataController {
                                                                                                                                @PathVariable Long tenantId,
                                                                                                                                @PathVariable Long participantId,
                                                                                                                                @PathVariable String transferProcessId) {
-        var transferProcess = tenantService.getTransferProcess(participantId, transferProcessId);
+        var transferProcess = dataAccessService.getTransferProcess(participantId, transferProcessId);
         return ResponseEntity.ok(transferProcess);
     }
 }

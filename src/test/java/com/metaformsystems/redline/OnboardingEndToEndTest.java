@@ -22,16 +22,17 @@ import com.metaformsystems.redline.domain.entity.Dataspace;
 import com.metaformsystems.redline.domain.entity.ServiceProvider;
 import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
+import com.metaformsystems.redline.domain.service.DataAccessService;
 import com.metaformsystems.redline.domain.service.TenantService;
 import com.metaformsystems.redline.infrastructure.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.infrastructure.client.identityhub.IdentityHubClient;
 import com.metaformsystems.redline.infrastructure.client.management.ManagementApiClient;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Criterion;
 import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
@@ -67,6 +68,8 @@ import static org.awaitility.Awaitility.await;
 public class OnboardingEndToEndTest {
     @Autowired
     private TenantService tenantService;
+    @Autowired
+    private DataAccessService dataAccessService;
     @Autowired
     private ManagementApiClient managementApiClient;
     @Autowired
@@ -121,7 +124,7 @@ public class OnboardingEndToEndTest {
         var consumerInfo = onboardParticipant();
 
         // prepare consumer: create CEL expression
-        managementApiClient.createCelExpression(NewCelExpression.Builder.aNewCelExpression()
+        managementApiClient.createCelExpression(CelExpression.Builder.aNewCelExpression()
                 .id("membership_expr_" + consumerInfo.contextId())
                 .leftOperand("MembershipCredential")
                 .description("Expression for evaluating membership credential")
@@ -135,7 +138,7 @@ public class OnboardingEndToEndTest {
         registerDataPlane(providerInfo.contextId());
 
         // now acting as the consumer, getting the provider's catalog
-        var catalog = tenantService.requestCatalog(consumerInfo.id(), providerInfo.webDid(), "no-cache");
+        var catalog = dataAccessService.requestCatalog(consumerInfo.id(), providerInfo.webDid(), "no-cache");
 
         // get the asset with id "todo_asset"
         var dataset = catalog.getDataset().stream().filter(ds -> ds.getId().equals(todoAssetId)).findFirst().orElseThrow();
@@ -149,12 +152,12 @@ public class OnboardingEndToEndTest {
         assertThat(result).isNotNull().isInstanceOf(List.class);
 
         // check transfer process
-        var transferProcesses = tenantService.listTransferProcesses(consumerInfo.id());
+        var transferProcesses = dataAccessService.listTransferProcesses(consumerInfo.id());
         assertThat(transferProcesses).isNotEmpty();
         assertThat(transferProcesses.getFirst().getContractId()).isNotNull();
 
         //check contracts
-        var contracts = tenantService.listContracts(consumerInfo.id());
+        var contracts = dataAccessService.listContracts(consumerInfo.id());
         assertThat(contracts).isNotEmpty();
         assertThat(contracts).allSatisfy(c -> assertThat(c.getContractAgreement()).isNotNull());
     }
@@ -165,7 +168,7 @@ public class OnboardingEndToEndTest {
         var consumerInfo = onboardParticipant();
 
         // prepare consumer: create CEL expression
-        managementApiClient.createCelExpression(NewCelExpression.Builder.aNewCelExpression()
+        managementApiClient.createCelExpression(CelExpression.Builder.aNewCelExpression()
                 .id("membership_expr_" + consumerInfo.contextId())
                 .leftOperand("MembershipCredential")
                 .description("Expression for evaluating membership credential")
@@ -179,7 +182,7 @@ public class OnboardingEndToEndTest {
         registerDataPlane(providerInfo.contextId());
 
         // now acting as the consumer, getting the provider's catalog
-        var catalog = tenantService.requestCatalog(consumerInfo.id(), providerInfo.webDid(), "no-cache");
+        var catalog = dataAccessService.requestCatalog(consumerInfo.id(), providerInfo.webDid(), "no-cache");
 
         // get the asset with negotiationId "todo_asset"
         var dataset = catalog.getDataset().stream().filter(ds -> ds.getId().equals(todoAssetId)).findFirst().orElseThrow();
@@ -205,18 +208,18 @@ public class OnboardingEndToEndTest {
                         .target(todoAssetId)
                         .build())
                 .build();
-        var negotiationId = tenantService.initiateContractNegotiation(consumerInfo.id(), cr);
+        var negotiationId = dataAccessService.initiateContractNegotiation(consumerInfo.id(), cr);
         assertThat(negotiationId).isNotNull();
 
         // wait for negotiation to finalize
-        AtomicReference<ContractNegotiation> cn = new AtomicReference<>(tenantService.getContractNegotiation(consumerInfo.id(), negotiationId));
+        AtomicReference<ContractNegotiation> cn = new AtomicReference<>(dataAccessService.getContractNegotiation(consumerInfo.id(), negotiationId));
         assertThat(cn).isNotNull();
         assertThat(cn.get().getContractAgreementId()).isNull();
 
         await().atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofSeconds(1))
                 .untilAsserted(() -> {
-                    var updatedCn = tenantService.getContractNegotiation(consumerInfo.id(), negotiationId);
+                    var updatedCn = dataAccessService.getContractNegotiation(consumerInfo.id(), negotiationId);
                     assertThat(updatedCn.getContractAgreementId()).isNotNull();
                     assertThat(updatedCn.getState()).isEqualTo("FINALIZED");
                     cn.set(updatedCn);
@@ -232,13 +235,13 @@ public class OnboardingEndToEndTest {
                         "type", "HttpData"))
                 .transferType("HttpData-PULL")
                 .build();
-        var transferId = tenantService.initiateTransferProcess(consumerInfo.id(), rq);
+        var transferId = dataAccessService.initiateTransferProcess(consumerInfo.id(), rq);
         assertThat(transferId).isNotNull();
 
         await().atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofSeconds(1))
                 .untilAsserted(() -> {
-                    var tps = tenantService.getTransferProcess(consumerInfo.id(), transferId);
+                    var tps = dataAccessService.getTransferProcess(consumerInfo.id(), transferId);
                     assertThat(tps).isNotNull();
                     assertThat(tps.getState()).isEqualTo("STARTED");
                 });
@@ -250,7 +253,7 @@ public class OnboardingEndToEndTest {
         var consumerInfo = onboardParticipant();
 
         // prepare consumer: create CEL expression
-        managementApiClient.createCelExpression(NewCelExpression.Builder.aNewCelExpression()
+        managementApiClient.createCelExpression(CelExpression.Builder.aNewCelExpression()
                 .id("membership_expr_" + consumerInfo.contextId())
                 .leftOperand("MembershipCredential")
                 .description("Expression for evaluating membership credential")
@@ -282,7 +285,7 @@ public class OnboardingEndToEndTest {
     private String publishCertificateAsset(String participantContextId, String certificateAssetId, String resourceName) {
         // create HTTP asset
         var permission = "membership_asset";
-        managementApiClient.createAsset(participantContextId, NewAsset.Builder.aNewAsset()
+        managementApiClient.createAsset(participantContextId, Asset.Builder.aNewAsset()
                 .id(certificateAssetId)
                 .properties(Map.of("description", "This asset requires the Membership credential to access"))
                 .privateProperties(Map.of("permission", permission))
@@ -363,7 +366,7 @@ public class OnboardingEndToEndTest {
     private void publishHttpAsset(String participantContextId, String assetId) {
         // create HTTP asset
         var permission = "membership_asset";
-        managementApiClient.createAsset(participantContextId, NewAsset.Builder.aNewAsset()
+        managementApiClient.createAsset(participantContextId, Asset.Builder.aNewAsset()
                 .id(assetId)
                 .properties(Map.of("description", "This asset requires the Membership credential to access"))
                 .privateProperties(Map.of("permission", permission))

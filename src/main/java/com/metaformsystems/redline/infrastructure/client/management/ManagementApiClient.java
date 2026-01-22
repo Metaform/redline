@@ -14,25 +14,25 @@
 
 package com.metaformsystems.redline.infrastructure.client.management;
 
+import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractAgreement;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
+import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.QuerySpec;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
 
 import java.util.List;
 import java.util.Map;
 
 public interface ManagementApiClient {
     // Assets
-    void createAsset(String participantContextId, NewAsset asset);
+    void createAsset(String participantContextId, Asset asset);
 
     List<Map<String, Object>> queryAssets(String participantContextId, QuerySpec query);
 
@@ -60,7 +60,7 @@ public interface ManagementApiClient {
     List<Map<String, Object>> queryContractNegotiations(String participantContextId, QuerySpec query);
 
     // CEL expressions
-    void createCelExpression(NewCelExpression celExpression);
+    void createCelExpression(CelExpression celExpression);
 
     // TransferProcess
 

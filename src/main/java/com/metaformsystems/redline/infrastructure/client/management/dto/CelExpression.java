@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Set;
 
-public class NewCelExpression {
+public class CelExpression {
     @JsonProperty("@context")
     private final String[] context = new String[]{
             "https://w3id.org/edc/connector/management/v2",
@@ -76,10 +76,10 @@ public class NewCelExpression {
     }
 
     public static final class Builder {
-        private final NewCelExpression newCelExpression;
+        private final CelExpression celExpression;
 
         private Builder() {
-            newCelExpression = new NewCelExpression();
+            celExpression = new CelExpression();
         }
 
         public static Builder aNewCelExpression() {
@@ -87,32 +87,32 @@ public class NewCelExpression {
         }
 
         public Builder id(String id) {
-            newCelExpression.setId(id);
+            celExpression.setId(id);
             return this;
         }
 
         public Builder leftOperand(String leftOperand) {
-            newCelExpression.setLeftOperand(leftOperand);
+            celExpression.setLeftOperand(leftOperand);
             return this;
         }
 
         public Builder description(String description) {
-            newCelExpression.setDescription(description);
+            celExpression.setDescription(description);
             return this;
         }
 
         public Builder expression(String expression) {
-            newCelExpression.setExpression(expression);
+            celExpression.setExpression(expression);
             return this;
         }
 
         public Builder scopes(Set<String> scopes) {
-            newCelExpression.setScopes(scopes);
+            celExpression.setScopes(scopes);
             return this;
         }
 
-        public NewCelExpression build() {
-            return newCelExpression;
+        public CelExpression build() {
+            return celExpression;
         }
     }
 }

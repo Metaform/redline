@@ -20,13 +20,13 @@ import com.metaformsystems.redline.application.service.TokenProvider;
 import com.metaformsystems.redline.domain.entity.ClientCredentials;
 import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractAgreement;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.QuerySpec;
@@ -68,7 +68,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
-    public void createAsset(String participantContextId, NewAsset asset) {
+    public void createAsset(String participantContextId, Asset asset) {
         var token = getToken(participantContextId);
 
         controlPlaneWebClient.post()
@@ -212,7 +212,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
-    public void createCelExpression(NewCelExpression celExpression) {
+    public void createCelExpression(CelExpression celExpression) {
 
         var token = tokenProvider.getToken(adminCredentials.clientId(), adminCredentials.clientSecret(), "management-api:write management-api:read");
         controlPlaneWebClient.post()

@@ -4,11 +4,11 @@ import com.metaformsystems.redline.application.service.TokenProvider;
 import com.metaformsystems.redline.domain.entity.ClientCredentials;
 import com.metaformsystems.redline.domain.entity.Participant;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
+import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Criterion;
 import com.metaformsystems.redline.infrastructure.client.management.dto.DataplaneRegistration;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset;
-import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
@@ -89,7 +89,7 @@ class ManagementApiClientIntegrationTest {
     @Test
     void shouldCreateAsset() throws InterruptedException {
         // Arrange
-        var asset = NewAsset.Builder.aNewAsset()
+        var asset = Asset.Builder.aNewAsset()
                 .id("asset-123")
                 .properties(Map.of("name", "Test Asset", "contenttype", "application/json"))
                 .build();
@@ -397,7 +397,7 @@ class ManagementApiClientIntegrationTest {
     @Test
     void shouldCreateCelExpression() throws InterruptedException {
         // Arrange
-        var celExpression = NewCelExpression.Builder.aNewCelExpression()
+        var celExpression = CelExpression.Builder.aNewCelExpression()
                 .id("cel-123")
                 .expression("expression == 'test'")
                 .leftOperand("test-left-operand")
