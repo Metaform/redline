@@ -3,7 +3,7 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 import java.util.List;
 import java.util.Map;
 
-public record V1Alpha1ParticipantProfile(
+public record ParticipantProfile(
         String id,
         Long version,
         String identifier,
@@ -12,6 +12,6 @@ public record V1Alpha1ParticipantProfile(
         String errorDetail,
         Map<String, List<String>> participantRoles,
         Map<String, Object> properties,
-        List<V1Alpha1VirtualParticipantAgent> vpas
+        List<VirtualParticipantAgent> vpas
 ) {
 }

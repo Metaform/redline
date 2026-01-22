@@ -1,13 +1,13 @@
 package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1;
 
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.Cell;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.CellCreationRequest;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.DataspaceProfile;
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.ModelQuery;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1Cell;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1DataspaceProfile;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1NewCell;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1Tenant;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1TenantPropertiesDiff;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.ParticipantProfile;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.Tenant;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantCreationRequest;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantPropertiesDiff;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,41 +25,41 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     }
 
     @Override
-    public List<V1Alpha1Cell> listCells() {
+    public List<Cell> listCells() {
         return webClient.get()
                 .uri(API_BASE + "/cells")
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1Cell>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<Cell>>() {
                 })
                 .block();
     }
 
     @Override
-    public V1Alpha1Cell createCell(V1Alpha1NewCell newCell) {
+    public Cell createCell(CellCreationRequest cellCreationRequest) {
         return webClient.post()
                 .uri(API_BASE + "/cells")
-                .bodyValue(newCell)
+                .bodyValue(cellCreationRequest)
                 .retrieve()
-                .bodyToMono(V1Alpha1Cell.class)
+                .bodyToMono(Cell.class)
                 .block();
     }
 
     @Override
-    public List<V1Alpha1DataspaceProfile> listDataspaceProfiles() {
+    public List<DataspaceProfile> listDataspaceProfiles() {
         return webClient.get()
                 .uri(API_BASE + "/dataspace-profiles")
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1DataspaceProfile>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<DataspaceProfile>>() {
                 })
                 .block();
     }
 
     @Override
-    public V1Alpha1DataspaceProfile getDataspaceProfile(String id) {
+    public DataspaceProfile getDataspaceProfile(String id) {
         return webClient.get()
                 .uri(API_BASE + "/dataspace-profiles/{id}", id)
                 .retrieve()
-                .bodyToMono(V1Alpha1DataspaceProfile.class)
+                .bodyToMono(DataspaceProfile.class)
                 .block();
     }
 
@@ -73,100 +73,100 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     }
 
     @Override
-    public List<V1Alpha1ParticipantProfile> queryParticipantProfiles(ModelQuery query) {
+    public List<ParticipantProfile> queryParticipantProfiles(ModelQuery query) {
         return webClient.post()
                 .uri(API_BASE + "/participant-profiles/query")
                 .bodyValue(query)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1ParticipantProfile>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<ParticipantProfile>>() {
                 })
                 .block();
     }
 
     @Override
-    public List<V1Alpha1ParticipantProfile> listParticipantProfiles(String tenantId) {
+    public List<ParticipantProfile> listParticipantProfiles(String tenantId) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles", tenantId)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1ParticipantProfile>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<ParticipantProfile>>() {
                 })
                 .block();
     }
 
     @Override
-    public V1Alpha1ParticipantProfile getParticipantProfile(String tenantId, String participantId) {
+    public ParticipantProfile getParticipantProfile(String tenantId, String participantId) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles/{participantID}", tenantId, participantId)
                 .retrieve()
-                .bodyToMono(V1Alpha1ParticipantProfile.class)
+                .bodyToMono(ParticipantProfile.class)
                 .block();
     }
 
     @Override
-    public V1Alpha1ParticipantProfile deployParticipantProfile(String tenantId, V1Alpha1ParticipantProfile profile) {
+    public ParticipantProfile deployParticipantProfile(String tenantId, ParticipantProfile profile) {
         return webClient.post()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles", tenantId)
                 .bodyValue(profile)
                 .retrieve()
-                .bodyToMono(V1Alpha1ParticipantProfile.class)
+                .bodyToMono(ParticipantProfile.class)
                 .block();
     }
 
     @Override
-    public V1Alpha1ParticipantProfile deleteParticipantProfile(String tenantId, String participantId) {
+    public ParticipantProfile deleteParticipantProfile(String tenantId, String participantId) {
         return webClient.delete()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles/{participantID}", tenantId, participantId)
                 .retrieve()
-                .bodyToMono(V1Alpha1ParticipantProfile.class)
+                .bodyToMono(ParticipantProfile.class)
                 .block();
     }
 
     @Override
-    public List<V1Alpha1Tenant> listTenants() {
+    public List<Tenant> listTenants() {
         return webClient.get()
                 .uri(API_BASE + "/tenants")
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1Tenant>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<Tenant>>() {
                 })
                 .block();
     }
 
     @Override
-    public V1Alpha1Tenant getTenant(String id) {
+    public Tenant getTenant(String id) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}", id)
                 .retrieve()
-                .bodyToMono(V1Alpha1Tenant.class)
+                .bodyToMono(Tenant.class)
                 .block();
     }
 
     @Override
-    public V1Alpha1Tenant createTenant(V1Alpha1NewTenant newTenant) {
+    public Tenant createTenant(TenantCreationRequest newTenant) {
         return webClient.post()
                 .uri(API_BASE + "/tenants")
                 .bodyValue(newTenant)
                 .retrieve()
-                .bodyToMono(V1Alpha1Tenant.class)
+                .bodyToMono(Tenant.class)
                 .block();
     }
 
     @Override
-    public V1Alpha1Tenant updateTenant(String id, V1Alpha1TenantPropertiesDiff diff) {
+    public Tenant updateTenant(String id, TenantPropertiesDiff diff) {
         return webClient.patch()
                 .uri(API_BASE + "/tenants/{id}", id)
                 .bodyValue(diff)
                 .retrieve()
-                .bodyToMono(V1Alpha1Tenant.class)
+                .bodyToMono(Tenant.class)
                 .block();
     }
 
     @Override
-    public List<V1Alpha1Tenant> queryTenants(ModelQuery query) {
+    public List<Tenant> queryTenants(ModelQuery query) {
         return webClient.post()
                 .uri(API_BASE + "/tenants/query")
                 .bodyValue(query)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<V1Alpha1Tenant>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<Tenant>>() {
                 })
                 .block();
     }

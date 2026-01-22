@@ -3,13 +3,11 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-public record V1Alpha1VirtualParticipantAgent(
+public record Cell(
         String id,
         Long version,
         String state,
         OffsetDateTime stateTimestamp,
-        String type,
-        String cellId,
-        Map<String, Object> properties
-) {
+        String externalId,
+        Map<String, Object> properties) {
 }

@@ -3,11 +3,10 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-public record V1Alpha1Cell(
-        String id,
-        Long version,
+public record CellCreationRequest(
         String state,
         OffsetDateTime stateTimestamp,
         String externalId,
-        Map<String, Object> properties) {
+        Map<String, Object> properties
+) {
 }

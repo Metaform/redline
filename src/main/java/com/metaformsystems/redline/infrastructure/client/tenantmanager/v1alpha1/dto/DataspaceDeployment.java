@@ -3,10 +3,13 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-public record V1Alpha1NewCell(
+public record DataspaceDeployment(
+        String id,
+        Long version,
         String state,
         OffsetDateTime stateTimestamp,
-        String externalId,
+        String cellId,
+        String externalCellId,
         Map<String, Object> properties
 ) {
 }

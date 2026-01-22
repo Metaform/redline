@@ -1,13 +1,13 @@
 package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1;
 
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.Cell;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.CellCreationRequest;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.DataspaceProfile;
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.ModelQuery;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1Cell;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1DataspaceProfile;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1NewCell;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1Tenant;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1TenantPropertiesDiff;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.ParticipantProfile;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.Tenant;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantCreationRequest;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantPropertiesDiff;
 
 import java.util.List;
 
@@ -17,36 +17,36 @@ import java.util.List;
 public interface TenantManagerClient {
 
     // Cell operations
-    List<V1Alpha1Cell> listCells();
+    List<Cell> listCells();
 
-    V1Alpha1Cell createCell(V1Alpha1NewCell newCell);
+    Cell createCell(CellCreationRequest cellCreationRequest);
 
     // Dataspace Profile operations
-    List<V1Alpha1DataspaceProfile> listDataspaceProfiles();
+    List<DataspaceProfile> listDataspaceProfiles();
 
-    V1Alpha1DataspaceProfile getDataspaceProfile(String id);
+    DataspaceProfile getDataspaceProfile(String id);
 
     void deployDataspaceProfile(String id);
 
     // Participant Profile operations
-    List<V1Alpha1ParticipantProfile> queryParticipantProfiles(ModelQuery query);
+    List<ParticipantProfile> queryParticipantProfiles(ModelQuery query);
 
-    List<V1Alpha1ParticipantProfile> listParticipantProfiles(String tenantId);
+    List<ParticipantProfile> listParticipantProfiles(String tenantId);
 
-    V1Alpha1ParticipantProfile getParticipantProfile(String tenantId, String participantId);
+    ParticipantProfile getParticipantProfile(String tenantId, String participantId);
 
-    V1Alpha1ParticipantProfile deployParticipantProfile(String tenantId, V1Alpha1ParticipantProfile profile);
+    ParticipantProfile deployParticipantProfile(String tenantId, ParticipantProfile profile);
 
-    V1Alpha1ParticipantProfile deleteParticipantProfile(String tenantId, String participantId);
+    ParticipantProfile deleteParticipantProfile(String tenantId, String participantId);
 
     // Tenant operations
-    List<V1Alpha1Tenant> listTenants();
+    List<Tenant> listTenants();
 
-    V1Alpha1Tenant getTenant(String id);
+    Tenant getTenant(String id);
 
-    V1Alpha1Tenant createTenant(V1Alpha1NewTenant newTenant);
+    Tenant createTenant(TenantCreationRequest newTenant);
 
-    V1Alpha1Tenant updateTenant(String id, V1Alpha1TenantPropertiesDiff diff);
+    Tenant updateTenant(String id, TenantPropertiesDiff diff);
 
-    List<V1Alpha1Tenant> queryTenants(ModelQuery query);
+    List<Tenant> queryTenants(ModelQuery query);
 }

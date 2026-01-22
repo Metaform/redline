@@ -1,14 +1,15 @@
 package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto;
 
-import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
-public record V1Alpha1DataspaceProfile(
+public record VirtualParticipantAgent(
         String id,
         Long version,
-        V1Alpha1DataspaceSpec dataspaceSpec,
-        List<String> artifacts,
-        List<V1Alpha1DataspaceDeployment> deployments,
+        String state,
+        OffsetDateTime stateTimestamp,
+        String type,
+        String cellId,
         Map<String, Object> properties
 ) {
 }

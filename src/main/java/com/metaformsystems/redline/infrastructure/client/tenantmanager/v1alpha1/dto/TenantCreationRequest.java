@@ -2,9 +2,7 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 
 import java.util.Map;
 
-public record V1Alpha1Tenant(
-        String id,
-        Long version,
+public record TenantCreationRequest(
         Map<String, Object> properties
 ) {
 }

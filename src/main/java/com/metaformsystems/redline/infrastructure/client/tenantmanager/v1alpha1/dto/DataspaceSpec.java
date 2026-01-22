@@ -2,8 +2,8 @@ package com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1
 
 import java.util.List;
 
-public record V1Alpha1DataspaceSpec(
-        List<V1Alpha1CredentialSpec> credentialSpecs,
+public record DataspaceSpec(
+        List<CredentialSpec> credentialSpecs,
         List<String> protocolStack
 ) {
 }

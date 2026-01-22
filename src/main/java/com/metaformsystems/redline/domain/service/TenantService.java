@@ -40,8 +40,8 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.NewAsset
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.TenantManagerClient;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
-import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.ParticipantProfile;
+import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantCreationRequest;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,12 +163,12 @@ public class TenantService {
         var tenant = participant.getTenant();
         if (tenant.getCorrelationId() == null) {
             // Create Tenant in CFM and update tenant with correlation id
-            var tmTenant = tenantManagerClient.createTenant(new V1Alpha1NewTenant(Map.of("name", tenant.getName())));
+            var tmTenant = tenantManagerClient.createTenant(new TenantCreationRequest(Map.of("name", tenant.getName())));
             tenant.setCorrelationId(tmTenant.id());
         }
 
         // invoke CFM to deploy the ParticipantProfile and update the internal Participant entity with correlation id, identifier, and VPAs
-        var tmProfile = tenantManagerClient.deployParticipantProfile(tenant.getCorrelationId(), new V1Alpha1ParticipantProfile(
+        var tmProfile = tenantManagerClient.deployParticipantProfile(tenant.getCorrelationId(), new ParticipantProfile(
                 UUID.randomUUID().toString(), 0L, deployment.identifier(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
         ));
         participant.setCorrelationId(tmProfile.id());
@@ -426,7 +426,7 @@ public class TenantService {
         return false;
     }
 
-    private @Nullable String extractParticipantContextId(V1Alpha1ParticipantProfile participant) {
+    private @Nullable String extractParticipantContextId(ParticipantProfile participant) {
 
         var props = participant.properties();
         if (props != null && props.containsKey(STATE_PROPERTY_KEY) && props.get(STATE_PROPERTY_KEY) instanceof Map stateMap) {
