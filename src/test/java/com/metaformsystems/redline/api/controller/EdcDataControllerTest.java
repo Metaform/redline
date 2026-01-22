@@ -15,8 +15,8 @@
 package com.metaformsystems.redline.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.metaformsystems.redline.api.dto.request.ConstraintDto;
-import com.metaformsystems.redline.api.dto.request.ContractRequestDto;
+import com.metaformsystems.redline.api.dto.request.Constraint;
+import com.metaformsystems.redline.api.dto.request.ContractRequest;
 import com.metaformsystems.redline.application.service.TokenProvider;
 import com.metaformsystems.redline.domain.entity.ClientCredentials;
 import com.metaformsystems.redline.domain.entity.Dataspace;
@@ -303,7 +303,7 @@ public class EdcDataControllerTest {
                 .setBody("{\"@id\" : \"negotiation-id-123\"}")
                 .addHeader("Content-Type", "application/json"));
 
-        var contractRequest = new ContractRequestDto();
+        var contractRequest = new ContractRequest();
         contractRequest.setAssetId("asset-123");
         contractRequest.setOfferId("offer-456");
         contractRequest.setProviderId("did:web:provider-789");
@@ -337,23 +337,23 @@ public class EdcDataControllerTest {
                 .setBody("{\"@id\" : \"negotiation-id-123\"}")
                 .addHeader("Content-Type", "application/json"));
 
-        var prohibition = new ConstraintDto(
+        var prohibition = new Constraint(
                 "purpose",
                 "NEQ",
                 "commercial"
         );
-        var permission = new ConstraintDto(
+        var permission = new Constraint(
                 "action",
                 "EQ",
                 "read"
         );
-        var obligation = new ConstraintDto(
+        var obligation = new Constraint(
                 "consequence",
                 "EQ",
                 "audit"
         );
 
-        var contractRequest = new ContractRequestDto();
+        var contractRequest = new ContractRequest();
         contractRequest.setAssetId("asset-123");
         contractRequest.setOfferId("offer-456");
         contractRequest.setProviderId("did:web:provider-789");

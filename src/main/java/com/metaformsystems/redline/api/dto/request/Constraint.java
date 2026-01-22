@@ -14,6 +14,6 @@
 
 package com.metaformsystems.redline.api.dto.request;
 
-public record ConstraintDto(String leftOperand, String operator, String rightOperand) {
+public record Constraint(String leftOperand, String operator, String rightOperand) {
 
 }

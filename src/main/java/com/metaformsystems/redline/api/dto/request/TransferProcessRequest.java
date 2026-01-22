@@ -16,7 +16,7 @@ package com.metaformsystems.redline.api.dto.request;
 
 import java.util.Map;
 
-public class TransferProcess {
+public class TransferProcessRequest {
     private String counterPartyAddress;
     private String contractId;
     private Map<String, Object> dataDestination;
@@ -55,10 +55,10 @@ public class TransferProcess {
     }
 
     public static final class Builder {
-        private final TransferProcess transferProcess;
+        private final TransferProcessRequest transferProcessRequest;
 
         private Builder() {
-            transferProcess = new TransferProcess();
+            transferProcessRequest = new TransferProcessRequest();
         }
 
         public static Builder aNewTransferRequest() {
@@ -66,27 +66,27 @@ public class TransferProcess {
         }
 
         public Builder counterPartyAddress(String counterPartyAddress) {
-            transferProcess.setCounterPartyAddress(counterPartyAddress);
+            transferProcessRequest.setCounterPartyAddress(counterPartyAddress);
             return this;
         }
 
         public Builder contractId(String contractId) {
-            transferProcess.setContractId(contractId);
+            transferProcessRequest.setContractId(contractId);
             return this;
         }
 
         public Builder dataDestination(Map<String, Object> dataDestination) {
-            transferProcess.setDataDestination(dataDestination);
+            transferProcessRequest.setDataDestination(dataDestination);
             return this;
         }
 
         public Builder transferType(String transferType) {
-            transferProcess.setTransferType(transferType);
+            transferProcessRequest.setTransferType(transferType);
             return this;
         }
 
-        public TransferProcess build() {
-            return transferProcess;
+        public TransferProcessRequest build() {
+            return transferProcessRequest;
         }
     }
 }

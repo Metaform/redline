@@ -17,7 +17,7 @@ package com.metaformsystems.redline;
 import com.metaformsystems.redline.api.dto.request.DataspaceInfo;
 import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
-import com.metaformsystems.redline.api.dto.request.TransferProcess;
+import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
 import com.metaformsystems.redline.domain.entity.Dataspace;
 import com.metaformsystems.redline.domain.entity.ServiceProvider;
 import com.metaformsystems.redline.domain.repository.DataspaceRepository;
@@ -227,7 +227,7 @@ public class OnboardingEndToEndTest {
 
 
         // initiate transfer
-        var rq = TransferProcess.Builder.aNewTransferRequest()
+        var rq = TransferProcessRequest.Builder.aNewTransferRequest()
                 .counterPartyAddress(dspEndpointUrl)
                 .contractId(cn.get().getContractAgreementId())
                 .dataDestination(Map.of(

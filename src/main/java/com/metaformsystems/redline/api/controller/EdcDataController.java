@@ -14,20 +14,21 @@
 
 package com.metaformsystems.redline.api.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.metaformsystems.redline.api.dto.request.ContractRequestDto;
-import com.metaformsystems.redline.api.dto.request.TransferProcess;
+import com.metaformsystems.redline.api.dto.request.ContractRequest;
+import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
 import com.metaformsystems.redline.api.dto.response.Contract;
 import com.metaformsystems.redline.api.dto.response.ContractNegotiation;
 import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.domain.service.DataAccessService;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
-import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Obligation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Permission;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Prohibition;
+import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -49,8 +50,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Tag(name = "EDC data operations", description = "UI API for uploading and downloading data, managing EDC data transfers, and related operations")
@@ -58,9 +59,11 @@ import java.util.List;
 public class EdcDataController {
 
     private final DataAccessService dataAccessService;
+    private final ObjectMapper objectMapper;
 
-    public EdcDataController(DataAccessService dataAccessService) {
+    public EdcDataController(DataAccessService dataAccessService, ObjectMapper objectMapper) {
         this.dataAccessService = dataAccessService;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping(path = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files", consumes = "multipart/form-data")
@@ -82,7 +85,8 @@ public class EdcDataController {
                                            @RequestPart("file") MultipartFile file) {
 
         try {
-            HashMap<String, Object> metadataMap = new ObjectMapper().readValue(metadata, HashMap.class);
+            var metadataMap = objectMapper.readValue(metadata, new TypeReference<Map<String, Object>>() {
+            });
             dataAccessService.uploadFileForParticipant(participantId, metadataMap, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
@@ -140,11 +144,10 @@ public class EdcDataController {
     @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
     @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-
     //    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess>> listTransferProcesses(@PathVariable Long providerId,
-                                                                                                                                        @PathVariable Long tenantId,
-                                                                                                                                        @PathVariable Long participantId) {
+    public ResponseEntity<List<TransferProcess>> listTransferProcesses(@PathVariable Long providerId,
+                                                                       @PathVariable Long tenantId,
+                                                                       @PathVariable Long participantId) {
         return ResponseEntity.ok(dataAccessService.listTransferProcesses(participantId));
     }
 
@@ -196,7 +199,7 @@ public class EdcDataController {
     public ResponseEntity<String> requestContract(@PathVariable Long providerId,
                                                   @PathVariable Long tenantId,
                                                   @PathVariable Long participantId,
-                                                  @RequestBody ContractRequestDto contractRequest) {
+                                                  @RequestBody ContractRequest contractRequest) {
 
         var offer = Offer.Builder.anOffer()
                 .target(contractRequest.getAssetId())
@@ -221,7 +224,7 @@ public class EdcDataController {
             offer.obligation(List.of(obligation));
         }
 
-        var request = ContractRequest.Builder.aContractRequest()
+        var request = com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest.Builder.aContractRequest()
                 .providerId(contractRequest.getProviderId())
                 .policy(offer.build())
                 //counterparty address is left empty - the tenant service must resolve this from the DID
@@ -278,16 +281,16 @@ public class EdcDataController {
     public ResponseEntity<String> requestTransfer(@PathVariable Long providerId,
                                                   @PathVariable Long tenantId,
                                                   @PathVariable Long participantId,
-                                                  @RequestBody TransferProcess transferRequest) {
+                                                  @RequestBody TransferProcessRequest transferRequest) {
 
         return ResponseEntity.ok(dataAccessService.initiateTransferProcess(providerId, transferRequest));
     }
 
     @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers/{transferProcessId}")
-    public ResponseEntity<com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess> getTransferProcess(@PathVariable Long providerId,
-                                                                                                                               @PathVariable Long tenantId,
-                                                                                                                               @PathVariable Long participantId,
-                                                                                                                               @PathVariable String transferProcessId) {
+    public ResponseEntity<TransferProcess> getTransferProcess(@PathVariable Long providerId,
+                                                              @PathVariable Long tenantId,
+                                                              @PathVariable Long participantId,
+                                                              @PathVariable String transferProcessId) {
         var transferProcess = dataAccessService.getTransferProcess(participantId, transferProcessId);
         return ResponseEntity.ok(transferProcess);
     }

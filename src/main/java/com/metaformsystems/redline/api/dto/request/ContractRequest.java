@@ -16,13 +16,13 @@ package com.metaformsystems.redline.api.dto.request;
 
 import java.util.List;
 
-public class ContractRequestDto {
+public class ContractRequest {
     private String offerId;
     private String providerId;
     private String assetId;
-    private List<ConstraintDto> permissions;
-    private List<ConstraintDto> prohibitions;
-    private List<ConstraintDto> obligations;
+    private List<Constraint> permissions;
+    private List<Constraint> prohibitions;
+    private List<Constraint> obligations;
 
     public String getProviderId() {
         return providerId;
@@ -40,27 +40,27 @@ public class ContractRequestDto {
         this.assetId = assetId;
     }
 
-    public List<ConstraintDto> getPermissions() {
+    public List<Constraint> getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(List<ConstraintDto> permissions) {
+    public void setPermissions(List<Constraint> permissions) {
         this.permissions = permissions;
     }
 
-    public List<ConstraintDto> getProhibitions() {
+    public List<Constraint> getProhibitions() {
         return prohibitions;
     }
 
-    public void setProhibitions(List<ConstraintDto> prohibitions) {
+    public void setProhibitions(List<Constraint> prohibitions) {
         this.prohibitions = prohibitions;
     }
 
-    public List<ConstraintDto> getObligations() {
+    public List<Constraint> getObligations() {
         return obligations;
     }
 
-    public void setObligations(List<ConstraintDto> obligations) {
+    public void setObligations(List<Constraint> obligations) {
         this.obligations = obligations;
     }
 

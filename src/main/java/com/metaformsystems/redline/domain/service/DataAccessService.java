@@ -14,7 +14,7 @@
 
 package com.metaformsystems.redline.domain.service;
 
-import com.metaformsystems.redline.api.dto.request.TransferProcess;
+import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
 import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.domain.entity.UploadedFile;
 import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
@@ -26,6 +26,7 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
 import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
+import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,7 +149,7 @@ public class DataAccessService {
     }
 
     @Transactional
-    public List<com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess> listTransferProcesses(Long participantId) {
+    public List<TransferProcess> listTransferProcesses(Long participantId) {
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var participantContextId = participant.getParticipantContextId();
         return managementApiClient.listTransferProcesses(participantContextId);
@@ -190,7 +191,7 @@ public class DataAccessService {
         return managementApiClient.getContractNegotiation(participant.getParticipantContextId(), contractId);
     }
 
-    public String initiateTransferProcess(Long providerId, TransferProcess transferRequest) {
+    public String initiateTransferProcess(Long providerId, TransferProcessRequest transferRequest) {
         var participantContextId = getContextId(providerId);
 
         var rq = TransferRequest.Builder.aTransferRequest()
@@ -203,7 +204,7 @@ public class DataAccessService {
         return managementApiClient.initiateTransferProcess(participantContextId, rq);
     }
 
-    public com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
+    public TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
         return managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
     }
 
