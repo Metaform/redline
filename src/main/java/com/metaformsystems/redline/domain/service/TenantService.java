@@ -237,11 +237,12 @@ public class TenantService {
                 VirtualParticipantAgent.Type.valueOf(vpa.getType().name()),
                 com.metaformsystems.redline.api.dto.response.DeploymentState.valueOf(vpa.getState().name()))).toList();
         var infos = saved.getDataspaceInfos().stream()
-                .map(i -> new com.metaformsystems.redline.api.dto.response.DataspaceInfo(
-                        i.getId(),
-                        i.getDataspaceId(),
-                        i.getAgreementTypes(),
-                        i.getRoles()))
+                .map(entity -> new com.metaformsystems.redline.api.dto.response.DataspaceInfo(
+                        entity.getId(),
+                        entity.getDataspaceId(),
+                        entity.getAgreementTypes(),
+                        entity.getRoles(),
+                        entity.getProperties()))
                 .toList();
         return new Participant(saved.getId(), saved.getIdentifier(), vpas, infos);
     }

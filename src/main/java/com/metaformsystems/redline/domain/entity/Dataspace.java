@@ -15,13 +15,16 @@
 package com.metaformsystems.redline.domain.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +43,9 @@ public class Dataspace extends VersionedEntity {
     @JoinColumn(name = "dataspace_id")
     private Set<DataspaceProfile> profiles = new HashSet<>();
 
+    @Convert(converter = HashMapConverter.class)
+    private Map<String, Object> properties = new HashMap<>();
+
     public String getName() {
         return name;
     }
@@ -54,5 +60,13 @@ public class Dataspace extends VersionedEntity {
 
     public void setProfiles(Set<DataspaceProfile> profiles) {
         this.profiles = profiles;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

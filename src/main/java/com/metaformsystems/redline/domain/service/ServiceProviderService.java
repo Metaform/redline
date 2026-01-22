@@ -44,7 +44,7 @@ public class ServiceProviderService {
     @Transactional
     public List<Dataspace> getDataspaces() {
         return dataspaceRepository.findAll().stream()
-                .map(dataspace -> new Dataspace(dataspace.getId(), dataspace.getName()))
+                .map(dataspace -> new Dataspace(dataspace.getId(), dataspace.getName(), dataspace.getProperties()))
                 .toList();
     }
 

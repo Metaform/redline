@@ -15,6 +15,7 @@
 package com.metaformsystems.redline.api.dto.request;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -23,11 +24,13 @@ public class DataspaceInfo {
     protected Long dataspaceId;
     protected List<String> agreementTypes;
     protected List<String> roles;
+    protected Map<String, Object> properties;
 
-    public DataspaceInfo(Long dataspaceId, List<String> agreementTypes, List<String> roles) {
+    public DataspaceInfo(Long dataspaceId, List<String> agreementTypes, List<String> roles, Map<String, Object> properties) {
         this.dataspaceId = dataspaceId;
         this.agreementTypes = agreementTypes;
         this.roles = roles;
+        this.properties = properties;
     }
 
     public DataspaceInfo() {
@@ -55,5 +58,13 @@ public class DataspaceInfo {
 
     public void setRoles(List<String> roles) {
         this.roles = roles;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

@@ -16,6 +16,7 @@ package com.metaformsystems.redline.domain.entity;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -24,6 +25,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Metadata associated with a {@link Participant} for a specific {@link Dataspace}.
@@ -57,6 +59,10 @@ public class DataspaceInfo extends VersionedEntity {
     )
     private List<PartnerReference> partners = new ArrayList<>();
 
+    @Convert(converter = HashMapConverter.class)
+    private Map<String, Object> properties;
+
+
     public Long getDataspaceId() {
         return dataspaceId;
     }
@@ -87,5 +93,13 @@ public class DataspaceInfo extends VersionedEntity {
 
     public void setPartners(List<PartnerReference> partners) {
         this.partners = partners;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

@@ -15,6 +15,7 @@
 package com.metaformsystems.redline.api.dto.response;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -22,11 +23,9 @@ import java.util.List;
 public final class DataspaceInfo extends com.metaformsystems.redline.api.dto.request.DataspaceInfo {
     private Long id;
 
-    public DataspaceInfo(Long id, Long dataspaceId, List<String> agreementTypes, List<String> roles) {
+    public DataspaceInfo(Long id, Long dataspaceId, List<String> agreementTypes, List<String> roles, Map<String, Object> properties) {
+        super(dataspaceId, agreementTypes, roles, properties);
         this.id = id;
-        this.dataspaceId = dataspaceId;
-        this.agreementTypes = agreementTypes;
-        this.roles = roles;
     }
 
     public DataspaceInfo() {

@@ -165,7 +165,7 @@ class TenantControllerIntegrationTest {
 
     @Test
     void shouldRegisterTenant() throws Exception {
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("New Tenant", infos);
 
         mockMvc.perform(post("/api/ui/service-providers/{serviceProviderId}/tenants", serviceProvider.getId())
@@ -179,7 +179,8 @@ class TenantControllerIntegrationTest {
 
     @Test
     void shouldRegisterTenant_withProperties() throws Exception {
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var info = new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of());
+        var infos = List.of(info);
         var registration = new TenantRegistration("New Tenant", infos, Map.of("foo", "bar", "bar", 42));
 
         mockMvc.perform(post("/api/ui/service-providers/{serviceProviderId}/tenants", serviceProvider.getId())

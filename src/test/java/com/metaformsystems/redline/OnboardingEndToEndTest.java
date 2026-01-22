@@ -323,7 +323,7 @@ public class OnboardingEndToEndTest {
     @NotNull
     private ParticipantInfo onboardParticipant() {
         var slug = UUID.randomUUID().toString();
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var tenantName = "Test Tenant " + slug;
         var registration = new TenantRegistration(tenantName, infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
