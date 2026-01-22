@@ -118,7 +118,7 @@ public class TenantService {
         var tenant = new Tenant();
         tenant.setName(registration.tenantName());
         tenant.setServiceProvider(serviceProviderRepository.getReferenceById(serviceProviderId));
-
+        tenant.setProperties(registration.properties());
         // Create participant with dataspaces
         var participant = new Participant();
         participant.setIdentifier(registration.tenantName());
@@ -467,7 +467,7 @@ public class TenantService {
     private TenantResource toTenantResource(Tenant t) {
         var participants = t.getParticipants().stream()
                 .map(this::toParticipantResource).toList();
-        return new TenantResource(t.getId(), t.getServiceProvider().getId(), t.getName(), participants);
+        return new TenantResource(t.getId(), t.getServiceProvider().getId(), t.getName(), participants, t.getProperties());
     }
 
     private CacheableEntry<Catalog> fetchCatalog(String participantId, String did) {
