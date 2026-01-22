@@ -14,10 +14,10 @@
 
 package com.metaformsystems.redline.api.controller;
 
-import com.metaformsystems.redline.api.dto.response.Dataspace;
 import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.ServiceProvider;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
+import com.metaformsystems.redline.api.dto.response.Dataspace;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.PartnerReference;
 import com.metaformsystems.redline.api.dto.response.Tenant;
@@ -96,8 +96,7 @@ public class TenantController {
                     content = @Content(schema = @Schema(implementation = Tenant.class))),
     })
     @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    public ResponseEntity<List<Tenant>> listTenants(
-            @PathVariable Long serviceProviderId) {
+    public ResponseEntity<List<Tenant>> listTenants(@PathVariable Long serviceProviderId) {
         var tenants = tenantService.getTenants(serviceProviderId);
         return ResponseEntity.ok(tenants);
     }
@@ -112,9 +111,8 @@ public class TenantController {
             @ApiResponse(responseCode = "404", description = "Service provider not found")
     })
     @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    public ResponseEntity<Tenant> registerTenant(
-            @PathVariable Long serviceProviderId,
-            @RequestBody TenantRegistration registration) {
+    public ResponseEntity<Tenant> registerTenant(@PathVariable Long serviceProviderId,
+                                                 @RequestBody TenantRegistration registration) {
         var tenant = tenantService.registerTenant(serviceProviderId, registration);
         return ResponseEntity.ok(tenant);
     }

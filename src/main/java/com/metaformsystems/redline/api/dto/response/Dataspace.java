@@ -17,5 +17,5 @@ package com.metaformsystems.redline.api.dto.response;
 /**
  *
  */
-public record Dataspace(Long id, String name) {
+public record Dataspace(Long id, String name, java.util.Map<String, Object> properties) {
 }

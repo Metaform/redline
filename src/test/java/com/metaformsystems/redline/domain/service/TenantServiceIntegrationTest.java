@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.metaformsystems.redline.TestData.PARTICIPANT_PROFILE_RESPONSE;
@@ -120,7 +121,7 @@ class TenantServiceIntegrationTest {
 
     @Test
     void shouldRegisterTenant() {
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
 
         var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
@@ -139,7 +140,7 @@ class TenantServiceIntegrationTest {
 
     @Test
     void shouldGetTenantsByServiceProvider() {
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         tenantService.registerTenant(serviceProvider.getId(), registration);
 
@@ -154,7 +155,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldDeployParticipant() {
 
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().iterator().next();
@@ -235,7 +236,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetParticipant() {
 
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participant = tenant.participants().iterator().next();
@@ -254,7 +255,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetTenant() {
 
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
 
@@ -271,7 +272,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldDeployParticipantWithExistingTenantCorrelationId() {
 
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         var tenantResource = tenantService.registerTenant(serviceProvider.getId(), registration);
         var tenant = tenantRepository.findById(tenantResource.id()).orElseThrow();
@@ -444,7 +445,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetPartnerReferences() {
 
-        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
         var registration = new TenantRegistration("Test Tenant", infos);
         var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
         var participantId = tenant.participants().iterator().next().id();
