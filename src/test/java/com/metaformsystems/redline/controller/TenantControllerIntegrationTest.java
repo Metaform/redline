@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -161,6 +162,22 @@ class TenantControllerIntegrationTest {
                 .andExpect(jsonPath("$.name").value("New Tenant"))
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.participants", hasSize(1)));
+    }
+
+    @Test
+    void shouldRegisterTenant_withProperties() throws Exception {
+        var infos = List.of(new NewDataspaceInfo(dataspace.getId(), List.of(), List.of()));
+        var registration = new NewTenantRegistration("New Tenant", infos, Map.of("foo", "bar", "bar", 42));
+
+        mockMvc.perform(post("/api/ui/service-providers/{serviceProviderId}/tenants", serviceProvider.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registration)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("New Tenant"))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.participants", hasSize(1)))
+                .andExpect(jsonPath("$.properties.foo").value("bar"))
+                .andExpect(jsonPath("$.properties.bar").value(42));
     }
 
     @Test
