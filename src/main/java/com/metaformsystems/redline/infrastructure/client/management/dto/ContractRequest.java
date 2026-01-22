@@ -14,6 +14,7 @@
 
 package com.metaformsystems.redline.infrastructure.client.management.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Set;
@@ -29,6 +30,7 @@ public class ContractRequest {
     private String protocol = "dataspace-protocol-http:2025-1";
     private String counterPartyAddress;
     private String providerId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Set<String> callbackAddresses;
     private Offer policy;
 

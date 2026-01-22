@@ -22,7 +22,7 @@ public class Permission {
     @JsonProperty("@type")
     private final String type = "permission";
     @JsonProperty("action")
-    private String action;
+    private String action = "use";
     @JsonProperty("constraint")
     private List<Constraint> constraint;
 
