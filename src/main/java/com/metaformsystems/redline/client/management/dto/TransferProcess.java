@@ -33,6 +33,7 @@ public class TransferProcess {
     private String transferType;
     private String dataPlaneId;
     private Map<String, Object> dataplaneMetadata = new HashMap<>();
+    private String state;
 
     public String getType() {
         return type;
@@ -128,5 +129,13 @@ public class TransferProcess {
 
     public void setDataplaneMetadata(Map<String, Object> dataplaneMetadata) {
         this.dataplaneMetadata = dataplaneMetadata;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

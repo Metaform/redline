@@ -17,6 +17,7 @@ package com.metaformsystems.redline;
 import com.metaformsystems.redline.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.client.identityhub.IdentityHubClient;
 import com.metaformsystems.redline.client.management.ManagementApiClient;
+import com.metaformsystems.redline.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.client.management.dto.Criterion;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
@@ -29,6 +30,7 @@ import com.metaformsystems.redline.dao.DataplaneRegistration;
 import com.metaformsystems.redline.dao.NewDataspaceInfo;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
+import com.metaformsystems.redline.dao.NewTransferRequest;
 import com.metaformsystems.redline.model.Dataspace;
 import com.metaformsystems.redline.model.ServiceProvider;
 import com.metaformsystems.redline.repository.DataspaceRepository;
@@ -206,9 +208,10 @@ public class OnboardingEndToEndTest {
         var negotiationId = tenantService.initiateContractNegotiation(consumerInfo.id(), cr);
         assertThat(negotiationId).isNotNull();
 
-        var cn = tenantService.getContractNegotiation(consumerInfo.id(), negotiationId);
+        // wait for negotiation to finalize
+        AtomicReference<ContractNegotiation> cn = new AtomicReference<>(tenantService.getContractNegotiation(consumerInfo.id(), negotiationId));
         assertThat(cn).isNotNull();
-        assertThat(cn.getContractAgreementId()).isNull();
+        assertThat(cn.get().getContractAgreementId()).isNull();
 
         await().atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofSeconds(1))
@@ -216,8 +219,29 @@ public class OnboardingEndToEndTest {
                     var updatedCn = tenantService.getContractNegotiation(consumerInfo.id(), negotiationId);
                     assertThat(updatedCn.getContractAgreementId()).isNotNull();
                     assertThat(updatedCn.getState()).isEqualTo("FINALIZED");
+                    cn.set(updatedCn);
                 });
 
+
+        // initiate transfer
+        var rq = NewTransferRequest.Builder.aNewTransferRequest()
+                .counterPartyAddress(dspEndpointUrl)
+                .contractId(cn.get().getContractAgreementId())
+                .dataDestination(Map.of(
+                        "@type", "DataAddress",
+                        "type", "HttpData"))
+                .transferType("HttpData-PULL")
+                .build();
+        var transferId = tenantService.initiateTransferProcess(consumerInfo.id(), rq);
+        assertThat(transferId).isNotNull();
+
+        await().atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofSeconds(1))
+                .untilAsserted(() -> {
+                    var tps = tenantService.getTransferProcess(consumerInfo.id(), transferId);
+                    assertThat(tps).isNotNull();
+                    assertThat(tps.getState()).isEqualTo("STARTED");
+                });
     }
 
     @Test

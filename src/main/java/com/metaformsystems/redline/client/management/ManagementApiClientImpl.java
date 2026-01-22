@@ -27,6 +27,7 @@ import com.metaformsystems.redline.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.client.management.dto.NewPolicyDefinition;
 import com.metaformsystems.redline.client.management.dto.QuerySpec;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.client.management.dto.TransferRequest;
 import com.metaformsystems.redline.dao.DataplaneRegistration;
 import com.metaformsystems.redline.model.ClientCredentials;
 import com.metaformsystems.redline.repository.ParticipantRepository;
@@ -224,6 +225,55 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
+    public Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId) {
+        return controlPlaneWebClient.post()
+                .uri("/v1alpha/participants/%s/transfer".formatted(participantContextId))
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .bodyValue(Map.of(
+                        "policyId", policyId,
+                        "providerId", providerId))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {
+                })
+                .block();
+    }
+
+    @Override
+    public List<TransferProcess> listTransferProcesses(String participantContextId) {
+        return controlPlaneWebClient.post()
+                .uri("/v4alpha/participants/{participantContextId}/transferprocesses/request", participantContextId)
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<TransferProcess>>() {
+                })
+                .block();
+    }
+
+    @Override
+    public String initiateTransferProcess(String participantContextId, TransferRequest request) {
+        var response = controlPlaneWebClient.post()
+                .uri("/v4alpha/participants/{participantContextId}/transferprocesses", participantContextId)
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                })
+                .block();
+
+        return response != null ? response.get("@id").toString() : null;
+    }
+
+    @Override
+    public TransferProcess getTransferProcess(String participantContextId, String transferProcessId) {
+        return controlPlaneWebClient.get()
+                .uri("/v4alpha/participants/{participantContextId}/transferprocesses/{transferProcessId}", participantContextId, transferProcessId)
+                .header("Authorization", "Bearer " + getToken(participantContextId))
+                .retrieve()
+                .bodyToMono(TransferProcess.class)
+                .block();
+    }
+
+    @Override
     public Catalog getCatalog(String participantContextId, String counterPartyDid) {
         return controlPlaneWebClient.post()
                 .uri("/v1alpha/participants/%s/catalog".formatted(participantContextId))
@@ -255,31 +305,6 @@ public class ManagementApiClientImpl implements ManagementApiClient {
                         "policyId", policyId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<>() {
-                })
-                .block();
-    }
-
-    @Override
-    public Map<String, String> setupTransfer(String participantContextId, String policyId, String providerId) {
-        return controlPlaneWebClient.post()
-                .uri("/v1alpha/participants/%s/transfer".formatted(participantContextId))
-                .header("Authorization", "Bearer " + getToken(participantContextId))
-                .bodyValue(Map.of(
-                        "policyId", policyId,
-                        "providerId", providerId))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {
-                })
-                .block();
-    }
-
-    @Override
-    public List<TransferProcess> listTransferProcesses(String participantContextId) {
-        return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/transferprocesses/request", participantContextId)
-                .header("Authorization", "Bearer " + getToken(participantContextId))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<TransferProcess>>() {
                 })
                 .block();
     }

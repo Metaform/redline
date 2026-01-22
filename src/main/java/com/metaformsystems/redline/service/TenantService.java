@@ -9,12 +9,14 @@ import com.metaformsystems.redline.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.client.management.dto.NewAsset;
 import com.metaformsystems.redline.client.management.dto.NewCelExpression;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.client.management.dto.TransferRequest;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.TenantManagerClient;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1NewTenant;
 import com.metaformsystems.redline.client.tenantmanager.v1alpha1.dto.V1Alpha1ParticipantProfile;
 import com.metaformsystems.redline.dao.FileResource;
 import com.metaformsystems.redline.dao.NewParticipantDeployment;
 import com.metaformsystems.redline.dao.NewTenantRegistration;
+import com.metaformsystems.redline.dao.NewTransferRequest;
 import com.metaformsystems.redline.dao.ParticipantResource;
 import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.TenantResource;
@@ -359,6 +361,29 @@ public class TenantService {
         var participant = participantRepository.findById(participantId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         return managementApiClient.getContractNegotiation(participant.getParticipantContextId(), contractId);
+    }
+
+    public String initiateTransferProcess(Long providerId, NewTransferRequest transferRequest) {
+        var participantContextId = getContextId(providerId);
+
+        var rq = TransferRequest.Builder.aTransferRequest()
+                .counterPartyAddress(transferRequest.getCounterPartyAddress())
+                .transferType(transferRequest.getTransferType())
+                .contractId(transferRequest.getContractId())
+                .dataDestination(transferRequest.getDataDestination())
+                .build();
+
+        return managementApiClient.initiateTransferProcess(participantContextId, rq);
+    }
+
+    public TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
+        return managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
+    }
+
+    private String getContextId(Long providerId) {
+        var participant = participantRepository.findById(providerId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + providerId));
+        return participant.getParticipantContextId();
     }
 
     private ContractNegotiation getAgreement(String participantContextId, ContractNegotiation negotiation) {
