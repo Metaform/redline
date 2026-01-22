@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2026 Metaform Systems, Inc.
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Metaform Systems, Inc. - initial API and implementation
+ *
+ */
+
 package com.metaformsystems.redline.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,19 +24,10 @@ import com.metaformsystems.redline.client.management.dto.Permission;
 import com.metaformsystems.redline.client.management.dto.Prohibition;
 import com.metaformsystems.redline.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.dao.Contract;
-import com.metaformsystems.redline.dao.DataspaceResource;
 import com.metaformsystems.redline.dao.FileResource;
-import com.metaformsystems.redline.dao.NewParticipantDeployment;
-import com.metaformsystems.redline.dao.NewServiceProvider;
-import com.metaformsystems.redline.dao.NewTenantRegistration;
 import com.metaformsystems.redline.dao.NewTransferRequest;
-import com.metaformsystems.redline.dao.ParticipantResource;
-import com.metaformsystems.redline.dao.PartnerReferenceResource;
-import com.metaformsystems.redline.dao.ServiceProviderResource;
-import com.metaformsystems.redline.dao.TenantResource;
 import com.metaformsystems.redline.model.ContractNegotiationDto;
 import com.metaformsystems.redline.model.ContractRequestDto;
-import com.metaformsystems.redline.service.ServiceProviderService;
 import com.metaformsystems.redline.service.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -48,160 +53,16 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * Main API controller for the Redline UI
- */
 @RestController
+@Tag(name = "EDC data operations", description = "UI API for uploading and downloading data, managing EDC data transfers, and related operations")
 @RequestMapping(value = "/api/ui", produces = "application/json")
-@Tag(name = "Redline UI", description = "UI API for managing dataspaces, service providers, tenants, and participants")
-public class RedlineController {
-    private final ServiceProviderService serviceProviderService;
+public class EdcDataController {
     private final TenantService tenantService;
 
-    public RedlineController(ServiceProviderService serviceProviderService, TenantService tenantService) {
+    public EdcDataController(TenantService tenantService) {
         this.tenantService = tenantService;
-        this.serviceProviderService = serviceProviderService;
     }
 
-    @GetMapping("dataspaces")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get all dataspaces", description = "Retrieves a list of all available dataspaces")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved dataspaces")
-    })
-    public ResponseEntity<List<DataspaceResource>> getDataspaces() {
-        return ResponseEntity.ok(serviceProviderService.getDataspaces());
-    }
-
-    @GetMapping("service-providers")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get all service providers", description = "Retrieves a list of all registered service providers")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved service providers")
-    })
-    public ResponseEntity<List<ServiceProviderResource>> getServiceProviders() {
-        return ResponseEntity.ok(serviceProviderService.getServiceProviders());
-    }
-
-    @PostMapping("service-providers")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Create a new service provider", description = "Registers a new service provider in the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Service provider successfully created",
-                    content = @Content(schema = @Schema(implementation = ServiceProviderResource.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid service provider data")
-    })
-    public ResponseEntity<ServiceProviderResource> createServiceProvider(@RequestBody NewServiceProvider newServiceProvider) {
-        var saved = serviceProviderService.createServiceProvider(newServiceProvider);
-        return ResponseEntity.ok(saved);
-    }
-
-    @GetMapping("service-providers/{serviceProviderId}/tenants")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "List tenants", description = "List all tenants under a specific service provider.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tenants Successfully retrieved",
-                    content = @Content(schema = @Schema(implementation = TenantResource.class))),
-    })
-    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    public ResponseEntity<List<TenantResource>> listTenants(
-            @PathVariable Long serviceProviderId) {
-        var tenants = tenantService.getTenants(serviceProviderId);
-        return ResponseEntity.ok(tenants);
-    }
-
-    @PostMapping("service-providers/{serviceProviderId}/tenants")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Register a new tenant", description = "Registers a new tenant under a specific service provider. A participant profile is also created.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tenant successfully registered",
-                    content = @Content(schema = @Schema(implementation = TenantResource.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid tenant registration data"),
-            @ApiResponse(responseCode = "404", description = "Service provider not found")
-    })
-    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    public ResponseEntity<TenantResource> registerTenant(
-            @PathVariable Long serviceProviderId,
-            @RequestBody NewTenantRegistration registration) {
-        var tenant = tenantService.registerTenant(serviceProviderId, registration);
-        return ResponseEntity.ok(tenant);
-    }
-
-    @PostMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/deployments")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Deploy a participant", description = "Deploys a participant for a tenant. This will trigger the creation of resources in the dataspace.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Participant successfully deployed",
-                    content = @Content(schema = @Schema(implementation = ParticipantResource.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid deployment data"),
-            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found")
-    })
-    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
-    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    public ResponseEntity<ParticipantResource> deployParticipant(@PathVariable Long serviceProviderId,
-                                                                 @PathVariable Long tenantId,
-                                                                 @PathVariable Long participantId,
-                                                                 @RequestBody NewParticipantDeployment deployment) {
-        var participant = tenantService.deployParticipant(deployment);
-        return ResponseEntity.ok(participant);
-    }
-
-    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get tenant details", description = "Retrieves detailed information about a specific tenant")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved tenant details",
-                    content = @Content(schema = @Schema(implementation = TenantResource.class))),
-            @ApiResponse(responseCode = "404", description = "Service provider or tenant not found")
-    })
-    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
-    public ResponseEntity<TenantResource> getTenant(@PathVariable Long serviceProviderId,
-                                                    @PathVariable Long tenantId) {
-        var tenantResource = tenantService.getTenant(tenantId);
-        // TODO auth check for provider access
-        return ResponseEntity.ok(tenantResource);
-    }
-
-    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get participant details", description = "Retrieves detailed information about a specific participant")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved participant details",
-                    content = @Content(schema = @Schema(implementation = ParticipantResource.class))),
-            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found")
-    })
-    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
-    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
-    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    public ResponseEntity<ParticipantResource> getParticipant(@PathVariable Long serviceProviderId,
-                                                              @PathVariable Long tenantId,
-                                                              @PathVariable Long participantId) {
-        var participantResource = tenantService.getParticipant(participantId);
-        // TODO auth check for provider access
-        return ResponseEntity.ok(participantResource);
-    }
-
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/partners/{dataspaceId}")
-//    @PreAuthorize("hasRole('USER')")
-    @Operation(summary = "Get partner references", description = "Retrieves a list of partner references for a participant in a specific dataspace")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved partner references"),
-            @ApiResponse(responseCode = "404", description = "Service provider, tenant, participant, or dataspace not found")
-    })
-    @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
-    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
-    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    @Parameter(name = "dataspaceId", description = "Database ID of the dataspace", required = true)
-    public ResponseEntity<List<PartnerReferenceResource>> getPartners(@PathVariable Long providerId,
-                                                                      @PathVariable Long tenantId,
-                                                                      @PathVariable Long participantId,
-                                                                      @PathVariable Long dataspaceId) {
-        var references = tenantService.getPartnerReferences(participantId, dataspaceId);
-        // TODO auth check for provider access
-        return ResponseEntity.ok(references);
-    }
 
     @PostMapping(path = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files", consumes = "multipart/form-data")
 //    @PreAuthorize("hasRole('USER')")
@@ -270,7 +131,7 @@ public class RedlineController {
         return ResponseEntity.ok(catalog);
     }
 
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfer-processes")
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers")
     @Operation(summary = "List transfer processes", description = "Retrieves a list of all transfer processes associated with a specific participant")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved transfer process list. May be empty."),
