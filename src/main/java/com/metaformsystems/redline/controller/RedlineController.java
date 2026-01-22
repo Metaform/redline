@@ -19,6 +19,7 @@ import com.metaformsystems.redline.dao.ParticipantResource;
 import com.metaformsystems.redline.dao.PartnerReferenceResource;
 import com.metaformsystems.redline.dao.ServiceProviderResource;
 import com.metaformsystems.redline.dao.TenantResource;
+import com.metaformsystems.redline.model.ContractNegotiationDto;
 import com.metaformsystems.redline.model.ContractRequestDto;
 import com.metaformsystems.redline.service.ServiceProviderService;
 import com.metaformsystems.redline.service.TenantService;
@@ -307,7 +308,15 @@ public class RedlineController {
         return ResponseEntity.ok(contracts);
     }
 
-
+    @Operation(summary = "Initiate a contract negotiation", description = "Triggers a contract negotiation with a counter-party based on the provided contract request details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contract Negotiation started successfully."),
+            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
+    @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
+    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
+    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
     @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts")
     public ResponseEntity<String> requestContract(@PathVariable Long providerId,
                                                   @PathVariable Long tenantId,
@@ -344,5 +353,39 @@ public class RedlineController {
                 .build();
 
         return ResponseEntity.ok(tenantService.initiateContractNegotiation(participantId, request));
+    }
+
+    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts/{contractNegotiationId}")
+    @Operation(summary = "Get a contract negotiation", description = "Gets details about a specific contract negotiation")
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contract Negotiation obtained successfully."),
+            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred while processing the request")
+    })
+    @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
+    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
+    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
+    @Parameter(name = "contractNegotiationId", description = "EDC-ID of the contract negotiation", required = true)
+    public ResponseEntity<ContractNegotiationDto> getContractNegotiation(@PathVariable Long providerId,
+                                                                         @PathVariable Long tenantId,
+                                                                         @PathVariable Long participantId,
+                                                                         @PathVariable String contractNegotiationId) {
+        var contractNegotiation = tenantService.getContractNegotiation(participantId, contractNegotiationId);
+
+        var dto = ContractNegotiationDto.Builder.aContractNegotiationDto()
+                .id(contractNegotiation.getId())
+                .state(contractNegotiation.getState())
+                .correlationId(contractNegotiation.getCorrelationId())
+                .counterPartyId(contractNegotiation.getCounterPartyId())
+                .counterPartyAddress(contractNegotiation.getCounterPartyAddress())
+                .protocol(contractNegotiation.getProtocol())
+                .participantContextId(contractNegotiation.getParticipantContextId())
+                .type(contractNegotiation.getType())
+                .contractAgreementId(contractNegotiation.getContractAgreementId())
+                .contractOffers(contractNegotiation.getContractOffers())
+                .build();
+
+        return ResponseEntity.ok(dto);
     }
 }

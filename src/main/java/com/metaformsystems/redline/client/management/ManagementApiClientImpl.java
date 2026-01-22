@@ -188,12 +188,12 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
-    public Map<String, Object> getContractNegotiation(String participantContextId, String negotiationId) {
+    public ContractNegotiation getContractNegotiation(String participantContextId, String negotiationId) {
         return controlPlaneWebClient.get()
                 .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/{id}", participantContextId, negotiationId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                .bodyToMono(new ParameterizedTypeReference<ContractNegotiation>() {
                 })
                 .block();
     }

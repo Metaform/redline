@@ -50,6 +50,21 @@ class WebDidResolverTest {
     }
 
     @Test
+    void returnsUrlWithPort() throws Exception {
+        var json = """
+                {
+                  "service": [
+                    { "type": "ProtocolEndpoint", "serviceEndpoint": "http://example.com/api" }
+                  ]
+                }
+                """;
+        var captor = ArgumentCaptor.forClass(HttpRequest.class);
+        var resolver = resolverWithMockResponse(200, json, captor);
+        var endpoint = resolver.resolveProtocolEndpoints("did:web:example.com%3A4711");
+        assertEquals("http://example.com/api", endpoint);
+    }
+
+    @Test
     void typeComparisonIsCaseInsensitive() throws Exception {
         var json = """
                 {
@@ -95,7 +110,7 @@ class WebDidResolverTest {
 
     @Test
     void throwsWhenHttpClientErrors() throws Exception {
-        HttpClient httpClient = mock(HttpClient.class);
+        var httpClient = mock(HttpClient.class);
         when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(new IOException("network"));
         var resolver = new WebDidResolver(httpClient, new ObjectMapper());
         assertThat(resolver.resolveProtocolEndpoints("did:web:example.com")).isNull();
@@ -150,9 +165,9 @@ class WebDidResolverTest {
     }
 
     private WebDidResolver resolverWithMockResponse(int status, String body, ArgumentCaptor<HttpRequest> requestCaptor) throws Exception {
-        HttpClient httpClient = mock(HttpClient.class);
+        var httpClient = mock(HttpClient.class);
         @SuppressWarnings("unchecked")
-        HttpResponse<String> httpResponse = (HttpResponse<String>) mock(HttpResponse.class);
+        var httpResponse = (HttpResponse<String>) mock(HttpResponse.class);
         when(httpResponse.statusCode()).thenReturn(status);
         when(httpResponse.body()).thenReturn(body);
         when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class))).thenReturn(httpResponse);
