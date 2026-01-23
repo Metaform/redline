@@ -49,9 +49,9 @@ import static org.awaitility.Awaitility.await;
  * This test runs through a full participant deployment for consumer and provider plus a data transfer between them.
  * For this test a running instance of JAD is required, and the Redline API Server must be reachable at http://redline.localhost.
  */
-@EnabledIfEnvironmentVariable(named = "ENABLE_E2E_TESTS", matches = "true", disabledReason = "This can only run if ENABLE_ONBOARDING_TESTS=true is set in the environment.")
+@EnabledIfEnvironmentVariable(named = "ENABLE_E2E_TESTS", matches = "true", disabledReason = "This can only run if ENABLE_E2E_TESTS=true is set in the environment.")
 public class TransferEndToEndTest {
-    private static final String BASE_URL = "http://redline.localhost";
+    private static final String BASE_URL = "http://redline.localhost:8080";
     private static final long SERVICE_PROVIDER_ID = 1;
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
