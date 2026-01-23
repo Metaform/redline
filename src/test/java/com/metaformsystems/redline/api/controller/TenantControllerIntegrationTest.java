@@ -414,4 +414,85 @@ class TenantControllerIntegrationTest {
                 .andExpect(jsonPath("$.agents", hasSize(3)));
     }
 
+    @Test
+    void shouldGetParticipantDataspaces() throws Exception {
+        // Create a tenant and participant with dataspace info
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        
+        // Add dataspace info to participant
+        var dataspaceInfo = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
+        dataspaceInfo.setDataspaceId(dataspace.getId());
+        participant.getDataspaceInfos().add(dataspaceInfo);
+        
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        mockMvc.perform(get("/api/ui/service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/dataspaces",
+                        serviceProvider.getId(), tenant.getId(), participant.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(dataspace.getId()))
+                .andExpect(jsonPath("$[0].name").value("Test Dataspace"));
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces_withMultipleDataspaces() throws Exception {
+        // Create additional dataspace
+        var dataspace2 = new Dataspace();
+        dataspace2.setName("Second Dataspace");
+        dataspace2 = dataspaceRepository.save(dataspace2);
+
+        // Create a tenant and participant with multiple dataspace infos
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        
+        // Add first dataspace info
+        var dataspaceInfo1 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
+        dataspaceInfo1.setDataspaceId(dataspace.getId());
+        participant.getDataspaceInfos().add(dataspaceInfo1);
+        
+        // Add second dataspace info
+        var dataspaceInfo2 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
+        dataspaceInfo2.setDataspaceId(dataspace2.getId());
+        participant.getDataspaceInfos().add(dataspaceInfo2);
+        
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        mockMvc.perform(get("/api/ui/service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/dataspaces",
+                        serviceProvider.getId(), tenant.getId(), participant.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[*].id").value(org.hamcrest.Matchers.containsInAnyOrder(dataspace.getId().intValue(), dataspace2.getId().intValue())))
+                .andExpect(jsonPath("$[*].name").value(org.hamcrest.Matchers.containsInAnyOrder("Test Dataspace", "Second Dataspace")));
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces_whenParticipantNotFound() throws Exception {
+        // Create a tenant without participant
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        mockMvc.perform(get("/api/ui/service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/dataspaces",
+                        serviceProvider.getId(), tenant.getId(), 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Participant not found")));
+    }
+
 }

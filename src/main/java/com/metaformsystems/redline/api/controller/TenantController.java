@@ -193,4 +193,22 @@ public class TenantController {
         return ResponseEntity.ok(references);
     }
 
+    @GetMapping("service-providers/{serviceProviderId}/tenants/{tenantId}/participants/{participantId}/dataspaces")
+//    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get participant dataspaces", description = "Retrieves a list of dataspaces associated with a specific participant")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved participant dataspaces"),
+            @ApiResponse(responseCode = "404", description = "Service provider, tenant, or participant not found")
+    })
+    @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
+    @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
+    @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
+    public ResponseEntity<List<Dataspace>> getParticipantDataspaces(@PathVariable Long serviceProviderId,
+                                                                    @PathVariable Long tenantId,
+                                                                    @PathVariable Long participantId) {
+        var dataspaces = tenantService.getParticipantDataspaces(participantId);
+        // TODO auth check for provider access
+        return ResponseEntity.ok(dataspaces);
+    }
+
 }

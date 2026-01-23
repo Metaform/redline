@@ -16,6 +16,7 @@ package com.metaformsystems.redline.domain.service;
 
 import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
+import com.metaformsystems.redline.api.dto.response.Dataspace;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.PartnerReference;
 import com.metaformsystems.redline.api.dto.response.Tenant;
@@ -24,6 +25,7 @@ import com.metaformsystems.redline.domain.entity.ClientCredentials;
 import com.metaformsystems.redline.domain.entity.DataspaceInfo;
 import com.metaformsystems.redline.domain.entity.DeploymentState;
 import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
+import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.domain.repository.TenantRepository;
@@ -59,6 +61,7 @@ public class TenantService {
     private final TenantRepository tenantRepository;
     private final ParticipantRepository participantRepository;
     private final ServiceProviderRepository serviceProviderRepository;
+    private final DataspaceRepository dataspaceRepository;
     private final TenantManagerClient tenantManagerClient;
     private final HashicorpVaultClient vaultClient;
 
@@ -66,11 +69,13 @@ public class TenantService {
     public TenantService(TenantRepository tenantRepository,
                          ParticipantRepository participantRepository,
                          ServiceProviderRepository serviceProviderRepository,
+                         DataspaceRepository dataspaceRepository,
                          TenantManagerClient tenantManagerClient,
                          HashicorpVaultClient vaultClient) {
         this.tenantRepository = tenantRepository;
         this.participantRepository = participantRepository;
         this.serviceProviderRepository = serviceProviderRepository;
+        this.dataspaceRepository = dataspaceRepository;
         this.tenantManagerClient = tenantManagerClient;
         this.vaultClient = vaultClient;
     }
@@ -215,6 +220,26 @@ public class TenantService {
                 .filter(i -> i.getDataspaceId().equals(dataspacesId))
                 .flatMap(i -> i.getPartners().stream())
                 .map(r -> new PartnerReference(r.identifier(), r.nickname()))
+                .toList();
+    }
+
+    @Transactional
+    public List<Dataspace> getParticipantDataspaces(Long participantId) {
+        var participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+
+        var dataspaceIds = participant.getDataspaceInfos().stream()
+                .map(DataspaceInfo::getDataspaceId)
+                .toList();
+
+        if (dataspaceIds.isEmpty()) {
+            return List.of();
+        }
+
+        var dataspaces = dataspaceRepository.findAllById(dataspaceIds);
+
+        return dataspaces.stream()
+                .map(ds -> new Dataspace(ds.getId(), ds.getName(), ds.getProperties()))
                 .toList();
     }
 
