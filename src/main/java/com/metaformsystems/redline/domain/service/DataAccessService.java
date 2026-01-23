@@ -93,20 +93,13 @@ public class DataAccessService {
 
         //2. create policy
         var policy = MEMBERSHIP_POLICY;
-        try {
-            managementApiClient.createPolicy(participantContextId, policy);
-        } catch (WebClientResponseException.Conflict e) {
-            // do nothing, policy already exists
-            log.info("Policy already exists: {}", policy.getId());
-        }
+        policy.setId(UUID.randomUUID().toString());
+        managementApiClient.createPolicy(participantContextId, policy);
 
         //3. create contract definition if none exists
-        try {
-            managementApiClient.createContractDefinition(participantContextId, MEMBERSHIP_CONTRACT_DEFINITION);
-        } catch (WebClientResponseException.Conflict e) {
-            // do nothing, contract definition already exists
-            log.info("Contract Definition already exists: {}", policy.getId());
-        }
+        var membershipContractDefinition = MEMBERSHIP_CONTRACT_DEFINITION;
+        membershipContractDefinition.setId(UUID.randomUUID().toString());
+        managementApiClient.createContractDefinition(participantContextId, membershipContractDefinition);
 
         //4. upload file to data plane
         // todo: do we need this?

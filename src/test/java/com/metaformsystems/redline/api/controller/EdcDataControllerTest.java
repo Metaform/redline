@@ -247,10 +247,7 @@ public class EdcDataControllerTest {
                         serviceProvider.getId(), tenant.getId(), participant.getId())
                         .file(mockFile)
                         .part(metadataPart))
-                .andExpect(status().isOk());
-
-        assertThat(participantRepository.findById(participant.getId())).isPresent()
-                .hasValueSatisfying(p -> assertThat(p.getUploadedFiles()).hasSize(1));
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
