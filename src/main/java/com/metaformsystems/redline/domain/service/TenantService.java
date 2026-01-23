@@ -214,7 +214,7 @@ public class TenantService {
                 .flatMap(p -> p.getDataspaceInfos().stream())
                 .filter(i -> i.getDataspaceId().equals(dataspacesId))
                 .flatMap(i -> i.getPartners().stream())
-                .map(r -> new PartnerReference(r.identifier(), r.nickname()))
+                .map(r -> new PartnerReference(r.identifier(), r.nickname(), r.properties()))
                 .toList();
     }
 

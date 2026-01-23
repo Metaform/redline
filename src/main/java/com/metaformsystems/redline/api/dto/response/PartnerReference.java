@@ -14,5 +14,7 @@
 
 package com.metaformsystems.redline.api.dto.response;
 
-public record PartnerReference(String identifier, String nickname) {
+import java.util.Map;
+
+public record PartnerReference(String identifier, String nickname, Map<String, Object> properties) {
 }

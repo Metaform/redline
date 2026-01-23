@@ -454,8 +454,10 @@ class TenantServiceIntegrationTest {
         var participant = participantRepository.findById(participantId).orElseThrow();
         var dataspaceInfo = participant.getDataspaceInfos().iterator().next();
         var references = new ArrayList<PartnerReference>();
-        references.add(new PartnerReference("did:web:partner1.com", "Partner One"));
-        references.add(new PartnerReference("did:web:partner2.com", "Partner Two"));
+        var partner1Properties = Map.<String, Object>of("key1", "value1", "key2", 123);
+        var partner2Properties = Map.<String, Object>of("key3", "value3");
+        references.add(new PartnerReference("did:web:partner1.com", "Partner One", partner1Properties));
+        references.add(new PartnerReference("did:web:partner2.com", "Partner Two", partner2Properties));
         dataspaceInfo.setPartners(references);
         participantRepository.save(participant);
 
@@ -464,8 +466,44 @@ class TenantServiceIntegrationTest {
 
 
         assertThat(result).hasSize(2);
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") && ref.nickname().equals("Partner One"));
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") && ref.nickname().equals("Partner Two"));
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") 
+                && ref.nickname().equals("Partner One")
+                && ref.properties().equals(partner1Properties));
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") 
+                && ref.nickname().equals("Partner Two")
+                && ref.properties().equals(partner2Properties));
+    }
+
+    @Test
+    void shouldGetPartnerReferences_withEmptyProperties() {
+
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
+        var registration = new TenantRegistration("Test Tenant", infos);
+        var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var participantId = tenant.participants().iterator().next().id();
+
+        // Add partners to the participant's dataspace info with empty properties
+        var participant = participantRepository.findById(participantId).orElseThrow();
+        var dataspaceInfo = participant.getDataspaceInfos().iterator().next();
+        var references = new ArrayList<PartnerReference>();
+        references.add(new PartnerReference("did:web:partner1.com", "Partner One"));
+        references.add(new PartnerReference("did:web:partner2.com", "Partner Two", Map.of()));
+        dataspaceInfo.setPartners(references);
+        participantRepository.save(participant);
+
+
+        var result = tenantService.getPartnerReferences(participantId, dataspace.getId());
+
+
+        assertThat(result).hasSize(2);
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") 
+                && ref.nickname().equals("Partner One")
+                && ref.properties() != null
+                && ref.properties().isEmpty());
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") 
+                && ref.nickname().equals("Partner Two")
+                && ref.properties() != null
+                && ref.properties().isEmpty());
     }
 
 }
