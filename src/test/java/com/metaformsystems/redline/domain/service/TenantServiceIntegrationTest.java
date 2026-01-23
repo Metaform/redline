@@ -24,6 +24,7 @@ import com.metaformsystems.redline.domain.entity.Participant;
 import com.metaformsystems.redline.domain.entity.PartnerReference;
 import com.metaformsystems.redline.domain.entity.ServiceProvider;
 import com.metaformsystems.redline.domain.entity.Tenant;
+import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
 import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
@@ -504,6 +505,95 @@ class TenantServiceIntegrationTest {
                 && ref.nickname().equals("Partner Two")
                 && ref.properties() != null
                 && ref.properties().isEmpty());
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces() {
+        // Setup: create tenant with participant and dataspace info
+        var infos = List.of(new DataspaceInfo(dataspace.getId(), List.of(), List.of(), Map.of()));
+        var registration = new TenantRegistration("Test Tenant", infos);
+        var tenant = tenantService.registerTenant(serviceProvider.getId(), registration);
+        var participantId = tenant.participants().iterator().next().id();
+
+        // Test
+        var result = tenantService.getParticipantDataspaces(participantId);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(dataspace.getId());
+        assertThat(result.get(0).name()).isEqualTo("Test Dataspace");
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces_withMultipleDataspaces() {
+        // Create additional dataspace
+        final var dataspace2 = new Dataspace();
+        dataspace2.setName("Second Dataspace");
+        dataspaceRepository.save(dataspace2);
+
+        // Setup: create tenant with participant and multiple dataspace infos
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+
+        // Add first dataspace info
+        var dataspaceInfo1 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
+        dataspaceInfo1.setDataspaceId(dataspace.getId());
+        participant.getDataspaceInfos().add(dataspaceInfo1);
+
+        // Add second dataspace info
+        var dataspaceInfo2 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
+        dataspaceInfo2.setDataspaceId(dataspace2.getId());
+        participant.getDataspaceInfos().add(dataspaceInfo2);
+
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        // Test
+        var result = tenantService.getParticipantDataspaces(participant.getId());
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result).anyMatch(ds -> ds.id().equals(dataspace.getId()) && ds.name().equals("Test Dataspace"));
+        assertThat(result).anyMatch(ds -> ds.id().equals(dataspace2.getId()) && ds.name().equals("Second Dataspace"));
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces_whenNoDataspaces() {
+        // Setup: create participant without dataspace infos
+        var tenant = new Tenant();
+        tenant.setName("Test Tenant");
+        tenant.setServiceProvider(serviceProvider);
+        tenant = tenantRepository.save(tenant);
+
+        var participant = new Participant();
+        participant.setIdentifier("Test Participant");
+        participant.setTenant(tenant);
+        tenant.addParticipant(participant);
+        participant = participantRepository.save(participant);
+
+        // Test
+        var result = tenantService.getParticipantDataspaces(participant.getId());
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldGetParticipantDataspaces_whenParticipantNotFound() {
+        // Test with non-existent participant ID
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> 
+                tenantService.getParticipantDataspaces(999L)))
+                .isInstanceOf(ObjectNotFoundException.class)
+                .hasMessageContaining("Participant not found with id: 999");
     }
 
 }

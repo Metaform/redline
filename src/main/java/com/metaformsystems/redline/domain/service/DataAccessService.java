@@ -93,20 +93,13 @@ public class DataAccessService {
 
         //2. create policy
         var policy = MEMBERSHIP_POLICY;
-        try {
-            managementApiClient.createPolicy(participantContextId, policy);
-        } catch (WebClientResponseException.Conflict e) {
-            // do nothing, policy already exists
-            log.info("Policy already exists: {}", policy.getId());
-        }
+        policy.setId(UUID.randomUUID().toString());
+        managementApiClient.createPolicy(participantContextId, policy);
 
         //3. create contract definition if none exists
-        try {
-            managementApiClient.createContractDefinition(participantContextId, MEMBERSHIP_CONTRACT_DEFINITION);
-        } catch (WebClientResponseException.Conflict e) {
-            // do nothing, contract definition already exists
-            log.info("Contract Definition already exists: {}", policy.getId());
-        }
+        var membershipContractDefinition = MEMBERSHIP_CONTRACT_DEFINITION;
+        membershipContractDefinition.setId(UUID.randomUUID().toString());
+        managementApiClient.createContractDefinition(participantContextId, membershipContractDefinition);
 
         //4. upload file to data plane
         // todo: do we need this?
@@ -194,8 +187,13 @@ public class DataAccessService {
     public String initiateTransferProcess(Long providerId, TransferProcessRequest transferRequest) {
         var participantContextId = getContextId(providerId);
 
+        var address = webDidResolver.resolveProtocolEndpoints(transferRequest.getCounterPartyId());
+        if (address == null) {
+            throw new ObjectNotFoundException("Could not resolve protocol endpoint from DID: " + transferRequest.getCounterPartyId());
+        }
+
         var rq = TransferRequest.Builder.aTransferRequest()
-                .counterPartyAddress(transferRequest.getCounterPartyAddress())
+                .counterPartyAddress(address)
                 .transferType(transferRequest.getTransferType())
                 .contractId(transferRequest.getContractId())
                 .dataDestination(transferRequest.getDataDestination())
@@ -204,8 +202,20 @@ public class DataAccessService {
         return managementApiClient.initiateTransferProcess(participantContextId, rq);
     }
 
+    @Transactional
     public TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
-        return managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
+        var tp = managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
+        if ("STARTED".equals(tp.getState())) { //download EDR as well
+            var edr = managementApiClient.getEdr(getContextId(participantId), transferProcessId);
+            tp.setContentDataAddress(edr);
+        }
+        return tp;
+    }
+
+    @Transactional
+    public byte[] downloadData(Long participantId, String fileId, String authToken) {
+        participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
+        return dataPlaneApiClient.downloadFile(authToken, fileId);
     }
 
     private CacheableEntry<Catalog> fetchCatalog(String participantId, String did) {
