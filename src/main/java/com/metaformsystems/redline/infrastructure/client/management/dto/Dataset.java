@@ -16,7 +16,9 @@ package com.metaformsystems.redline.infrastructure.client.management.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Dataset {
     @JsonProperty("@id")
@@ -33,6 +35,9 @@ public class Dataset {
 
     @JsonProperty("description")
     private String description;
+
+    @JsonProperty("properties")
+    private Map<String, Object> properties = new HashMap<>();
 
     public String getId() {
         return id;
@@ -72,5 +77,13 @@ public class Dataset {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

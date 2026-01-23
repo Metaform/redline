@@ -73,9 +73,18 @@ public class DataAccessService {
     public void uploadFileForParticipant(Long participantId, Map<String, Object> metadata, InputStream fileStream, String contentType, String originalFilename) {
 
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
-        //1. create asset
         var participantContextId = participant.getParticipantContextId();
-        var asset = createAsset(metadata, contentType, originalFilename);
+
+        //0. upload file to data plane
+        var assetId = UUID.randomUUID().toString();
+        metadata.put("assetId", assetId);
+        var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
+        var fileId = response.id();
+
+        //1. create asset
+        metadata.put("fileId", fileId);
+
+        var asset = createAsset(assetId, metadata, contentType, originalFilename);
         managementApiClient.createAsset(participantContextId, asset);
 
         // create CEL expression
@@ -97,18 +106,12 @@ public class DataAccessService {
         managementApiClient.createPolicy(participantContextId, policy);
 
         //3. create contract definition if none exists
-        var membershipContractDefinition = MEMBERSHIP_CONTRACT_DEFINITION;
-        membershipContractDefinition.setId(UUID.randomUUID().toString());
-        managementApiClient.createContractDefinition(participantContextId, membershipContractDefinition);
+        var contractDef = MEMBERSHIP_CONTRACT_DEFINITION;
+        contractDef.setId(UUID.randomUUID().toString());
+        contractDef.setContractPolicyId(policy.getId());
+        contractDef.setAccessPolicyId(policy.getId());
+        managementApiClient.createContractDefinition(participantContextId, contractDef);
 
-        //4. upload file to data plane
-        // todo: do we need this?
-        metadata.put("originalFilename", originalFilename);
-        metadata.put("contentType", contentType);
-        metadata.put("assetId", asset.getId());
-
-        var response = dataPlaneApiClient.uploadMultipart(participantContextId, metadata, fileStream);
-        var fileId = response.id();
 
         //2. track uploaded file in DB
         participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType, metadata));
@@ -258,23 +261,22 @@ public class DataAccessService {
         return negotiation;
     }
 
-    private Asset createAsset(Map<String, Object> metadata, String contentType, String originalFilename) {
+    private Asset createAsset(String id, Map<String, Object> metadata, String contentType, String originalFilename) {
 
-        var privateProperties = new HashMap<String, Object>(Map.of("permission", ASSET_PERMISSION));
-        privateProperties.putAll(metadata);
+        var properties = new HashMap<String, Object>(Map.of(
+                "description", "A file uploaded by Redline on " + Instant.now().toString(),
+                "contentType", contentType,
+                "originalFilename", originalFilename));
+        properties.putAll(metadata);
 
         return Asset.Builder.aNewAsset()
-                .id(UUID.randomUUID().toString())
+                .id(id)
                 .dataAddress(Map.of(
                         "type", "HttpCertData",
                         "@type", "DataAddress"
                 ))
-                .privateProperties(privateProperties)
-                .properties(Map.of(
-                        "description", "A file uploaded by Redline on " + Instant.now().toString(),
-                        "contentType", contentType,
-                        "originalFilename", originalFilename
-                ))
+                .privateProperties(Map.of("permission", ASSET_PERMISSION)) //this is targeted by the CEL expression, so it must be a private property
+                .properties(properties)
                 .build();
     }
 
