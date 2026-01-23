@@ -232,17 +232,13 @@ public class TenantService {
     public List<Dataspace> getParticipantDataspaces(Long participantId) {
         var participant = participantRepository.findById(participantId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
-
         var dataspaceIds = participant.getDataspaceInfos().stream()
                 .map(DataspaceInfo::getDataspaceId)
                 .toList();
-
         if (dataspaceIds.isEmpty()) {
             return List.of();
         }
-
         var dataspaces = dataspaceRepository.findAllById(dataspaceIds);
-
         return dataspaces.stream()
                 .map(ds -> new Dataspace(ds.getId(), ds.getName(), ds.getProperties()))
                 .toList();
