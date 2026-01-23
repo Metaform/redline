@@ -51,7 +51,7 @@ import static org.awaitility.Awaitility.await;
  */
 @EnabledIfEnvironmentVariable(named = "ENABLE_E2E_TESTS", matches = "true", disabledReason = "This can only run if ENABLE_E2E_TESTS=true is set in the environment.")
 public class TransferEndToEndTest {
-    private static final String BASE_URL = "http://redline.localhost";
+    private static final String BASE_URL = "http://redline.localhost:8080";
     private static final long SERVICE_PROVIDER_ID = 1;
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final Duration POLL_INTERVAL = Duration.ofSeconds(1);
