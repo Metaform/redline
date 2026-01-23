@@ -167,6 +167,12 @@ public class EdcDataControllerTest {
         var metadataPart = new MockPart("metadata", "{\"foo\": \"bar\"}".getBytes());
         metadataPart.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
+        // Mock the upload response from the dataplane
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"id\": \"generated-file-id-123\"}")
+                .addHeader("Content-Type", "application/json"));
+
         // mock create-cel-expression
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
@@ -179,11 +185,6 @@ public class EdcDataControllerTest {
         //mock create-contractdef
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-        // Mock the upload response from the dataplane
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody("{\"id\": \"generated-file-id-123\"}")
-                .addHeader("Content-Type", "application/json"));
 
         mockMvc.perform(multipart("/api/ui/service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files",
                         serviceProvider.getId(), tenant.getId(), participant.getId())

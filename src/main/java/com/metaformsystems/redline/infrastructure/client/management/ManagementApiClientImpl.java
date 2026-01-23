@@ -282,6 +282,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
                 .retrieve()
                 .bodyToMono(Catalog.class)
                 .block();
+
     }
 
     @Override
