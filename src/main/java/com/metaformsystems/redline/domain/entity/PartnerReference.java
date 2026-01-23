@@ -26,12 +26,9 @@ import java.util.Map;
  */
 @Embeddable
 public record PartnerReference(
-        @Column(name = "identifier")
         String identifier,
-        
-        @Column(name = "nickname")
         String nickname,
-        
+
         @Column(name = "properties", columnDefinition = "TEXT")
         @Convert(converter = HashMapConverter.class)
         Map<String, Object> properties
