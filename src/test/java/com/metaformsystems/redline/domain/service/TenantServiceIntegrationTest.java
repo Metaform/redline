@@ -686,7 +686,7 @@ class TenantServiceIntegrationTest {
     }
 
     @Test
-    void shouldCreatePartnerReference_whenTenantDoesNotBelongToProvider() {
+    void shouldNotCreatePartnerReference_whenTenantDoesNotBelongToProvider() {
         // Create another service provider
         var otherProvider = new ServiceProvider();
         otherProvider.setName("Other Provider");
