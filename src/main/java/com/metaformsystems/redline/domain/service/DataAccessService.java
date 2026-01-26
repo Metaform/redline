@@ -118,7 +118,7 @@ public class DataAccessService {
 
 
         //2. track uploaded file in DB
-        participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType, publicMetadata));
+        participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType, combinedMetadata));
     }
 
     @Transactional
