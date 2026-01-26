@@ -37,6 +37,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,7 +56,7 @@ import java.util.Map;
 
 @RestController
 @Tag(name = "EDC data operations", description = "UI API for uploading and downloading data, managing EDC data transfers, and related operations")
-@RequestMapping(value = "/api/ui", produces = "application/json")
+@RequestMapping(value = "/api/ui", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EdcDataController {
 
     private final DataAccessService dataAccessService;
@@ -66,7 +67,7 @@ public class EdcDataController {
         this.objectMapper = objectMapper;
     }
 
-    @PostMapping(path = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files", consumes = "multipart/form-data")
+    @PostMapping(path = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Upload a file", description = "Uploads a file for a specific participant with associated metadata")
     @ApiResponses(value = {
@@ -196,7 +197,7 @@ public class EdcDataController {
     @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
     @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts", produces = "text/plain")
+    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> requestContract(@PathVariable Long providerId,
                                                   @PathVariable Long tenantId,
                                                   @PathVariable Long participantId,
@@ -269,7 +270,7 @@ public class EdcDataController {
     }
 
 
-    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers", produces = "text/plain")
+    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers", produces = MediaType.TEXT_PLAIN_VALUE)
     @Operation(summary = "Initiate a transfer process", description = "Triggers a transfer process with a counter-party based on the provided contract agreement details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transfer process started successfully."),
@@ -296,7 +297,15 @@ public class EdcDataController {
         return ResponseEntity.ok(transferProcess);
     }
 
-    @GetMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files/{fileId}")
+    @Operation(summary = "Download file")
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                    schema = @Schema(type = "string", format = "binary")
+            )
+    )
+    @GetMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/files/{fileId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<byte[]> downloadData(@PathVariable Long providerId,
                                                @PathVariable Long tenantId,
                                                @PathVariable Long participantId,
