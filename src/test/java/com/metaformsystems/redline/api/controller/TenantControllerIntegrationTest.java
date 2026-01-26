@@ -558,7 +558,7 @@ class TenantControllerIntegrationTest {
     }
 
     @Test
-    void shouldCreatePartnerReference_whenParticipantNotFound() throws Exception {
+    void shouldNotCreatePartnerReference_whenParticipantNotFound() throws Exception {
         var tenant = new Tenant();
         tenant.setName("Test Tenant");
         tenant.setServiceProvider(serviceProvider);
