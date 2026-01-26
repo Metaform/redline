@@ -269,7 +269,7 @@ public class EdcDataController {
     }
 
 
-    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers")
+    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/transfers", produces = "text/plain")
     @Operation(summary = "Initiate a transfer process", description = "Triggers a transfer process with a counter-party based on the provided contract agreement details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transfer process started successfully."),
