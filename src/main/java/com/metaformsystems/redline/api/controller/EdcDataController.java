@@ -172,6 +172,7 @@ public class EdcDataController {
                     .type(cn.getType());
 
             if (cn.getContractAgreement() != null) {
+                builder.id(cn.getContractAgreement().getId());
                 builder.agreementId(cn.getContractAgreement().getAgreementId());
                 builder.assetId(cn.getContractAgreement().getAssetId());
                 builder.signingDate(Instant.ofEpochSecond(cn.getContractAgreement().getContractSigningDate()));
