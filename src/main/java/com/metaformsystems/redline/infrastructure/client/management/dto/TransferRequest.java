@@ -14,6 +14,7 @@
 
 package com.metaformsystems.redline.infrastructure.client.management.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -28,6 +29,7 @@ public class TransferRequest {
     private String protocol = "dataspace-protocol-http:2025-1";
     private String counterPartyAddress;
     private String contractId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Map<String, Object> dataDestination;
     private String transferType;
 
