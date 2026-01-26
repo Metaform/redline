@@ -195,7 +195,7 @@ public class EdcDataController {
     @Parameter(name = "providerId", description = "Database ID of the service provider", required = true)
     @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    @PostMapping("service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts")
+    @PostMapping(value = "service-providers/{providerId}/tenants/{tenantId}/participants/{participantId}/contracts", produces = "text/plain")
     public ResponseEntity<String> requestContract(@PathVariable Long providerId,
                                                   @PathVariable Long tenantId,
                                                   @PathVariable Long participantId,
