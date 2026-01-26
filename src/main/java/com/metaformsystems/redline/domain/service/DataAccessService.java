@@ -45,6 +45,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.metaformsystems.redline.domain.service.Constants.ASSET_PERMISSION;
 import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_CONTRACT_DEFINITION;
@@ -78,7 +80,9 @@ public class DataAccessService {
         //0. upload file to data plane
         var assetId = UUID.randomUUID().toString();
         publicMetadata.put("assetId", assetId);
-        var response = dataPlaneApiClient.uploadMultipart(participantContextId, publicMetadata, fileStream);
+        var combinedMetadata = Stream.of(publicMetadata, privateMetadata).flatMap(m -> m.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        var response = dataPlaneApiClient.uploadMultipart(participantContextId, combinedMetadata, fileStream);
         var fileId = response.id();
 
         //1. create asset
