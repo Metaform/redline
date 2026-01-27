@@ -47,6 +47,7 @@ public class Tenant extends VersionedEntity {
 
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Participant> participants = new HashSet<>();
+    @Column(name = "properties", columnDefinition = "TEXT")
     @Convert(converter = HashMapConverter.class)
     private Map<String, Object> properties = new HashMap<>();
     private String correlationId;
