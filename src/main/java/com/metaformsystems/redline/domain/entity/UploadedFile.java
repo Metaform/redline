@@ -14,6 +14,7 @@
 
 package com.metaformsystems.redline.domain.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -26,6 +27,7 @@ public class UploadedFile extends VersionedEntity {
     private String fileId;
     private String originalFilename;
     private String contentType;
+    @Column(name = "metadata", columnDefinition = "TEXT")
     @Convert(converter = HashMapConverter.class)
     private Map<String, Object> metadata;
 

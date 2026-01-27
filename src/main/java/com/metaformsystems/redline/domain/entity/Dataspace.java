@@ -43,6 +43,7 @@ public class Dataspace extends VersionedEntity {
     @JoinColumn(name = "dataspace_id")
     private Set<DataspaceProfile> profiles = new HashSet<>();
 
+    @Column(name = "properties", columnDefinition = "TEXT")
     @Convert(converter = HashMapConverter.class)
     private Map<String, Object> properties = new HashMap<>();
 

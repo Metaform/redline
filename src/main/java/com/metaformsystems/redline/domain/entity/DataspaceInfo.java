@@ -59,6 +59,7 @@ public class DataspaceInfo extends VersionedEntity {
     )
     private List<PartnerReference> partners = new ArrayList<>();
 
+    @Column(name = "properties", columnDefinition = "TEXT")
     @Convert(converter = HashMapConverter.class)
     private Map<String, Object> properties;
 
