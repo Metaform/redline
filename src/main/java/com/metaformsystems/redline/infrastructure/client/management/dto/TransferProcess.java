@@ -34,6 +34,7 @@ public class TransferProcess {
     private String dataPlaneId;
     private Map<String, Object> dataplaneMetadata = new HashMap<>();
     private String state;
+    private long stateTimestamp;
 
     public String getType() {
         return type;
@@ -137,5 +138,13 @@ public class TransferProcess {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public long getStateTimestamp() {
+        return stateTimestamp;
+    }
+
+    public void setStateTimestamp(long stateTimestamp) {
+        this.stateTimestamp = stateTimestamp;
     }
 }
