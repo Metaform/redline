@@ -21,13 +21,7 @@ import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.infrastructure.client.dataplane.DataPlaneApiClient;
 import com.metaformsystems.redline.infrastructure.client.management.ManagementApiClient;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
-import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
-import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
-import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
-import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
+import com.metaformsystems.redline.infrastructure.client.management.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -39,11 +33,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,10 +62,22 @@ public class DataAccessService {
     }
 
     @Transactional
-    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename) {
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, List<CelExpression> celExpressions, PolicySet permissions) {
 
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var participantContextId = participant.getParticipantContextId();
+
+
+        //-1. create CEL expressions
+        if (celExpressions != null) {
+            celExpressions.forEach(celExpression -> {
+                try {
+                    managementApiClient.createCelExpression(celExpression);
+                } catch (WebClientResponseException.Conflict e) {
+                    //do nothing, CEL expression already exists
+                }
+            });
+        }
 
         //0. upload file to data plane
         var assetId = UUID.randomUUID().toString();
@@ -106,6 +108,11 @@ public class DataAccessService {
 
         //2. create policy
         var policy = MEMBERSHIP_POLICY;
+        if (permissions != null) {
+            var permissionList = new ArrayList<>(policy.getPolicy().getPermission());
+            permissionList.addAll(permissions.getPermission());
+            policy.getPolicy().setPermission(permissionList);
+        }
         policy.setId(UUID.randomUUID().toString());
         managementApiClient.createPolicy(participantContextId, policy);
 
@@ -114,6 +121,7 @@ public class DataAccessService {
         contractDef.setId(UUID.randomUUID().toString());
         contractDef.setContractPolicyId(policy.getId());
         contractDef.setAccessPolicyId(policy.getId());
+        contractDef.setAssetsSelector(Set.of(new Criterion("id", "=", assetId)));
         managementApiClient.createContractDefinition(participantContextId, contractDef);
 
 

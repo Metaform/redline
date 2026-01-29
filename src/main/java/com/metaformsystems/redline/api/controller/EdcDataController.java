@@ -18,21 +18,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaformsystems.redline.api.dto.request.ContractRequest;
 import com.metaformsystems.redline.api.dto.request.CounterPartyIdWrapper;
+import com.metaformsystems.redline.api.dto.request.FileUploadRequest;
 import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
 import com.metaformsystems.redline.api.dto.response.Contract;
 import com.metaformsystems.redline.api.dto.response.ContractNegotiation;
 import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.domain.service.DataAccessService;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Obligation;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Permission;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Prohibition;
-import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.infrastructure.client.management.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -51,6 +47,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -84,12 +81,27 @@ public class EdcDataController {
                                            @PathVariable Long providerId,
                                            @RequestPart("publicMetadata") String publicMetadata,
                                            @RequestPart("privateMetadata") String privateMetadata,
+                                           @RequestPart(value = "celExpressions", required = false) String celExpressions,
+                                           @RequestPart(value = "permissions", required = false) PolicySet permissions,
                                            @RequestPart("file") MultipartFile file) {
 
         try {
             var publicMetadataMap = objectMapper.readValue(publicMetadata, new TypeReference<Map<String, Object>>() {});
             var privateMetadataMap = objectMapper.readValue(privateMetadata, new TypeReference<Map<String, Object>>() {});
-            dataAccessService.uploadFileForParticipant(participantId, publicMetadataMap, privateMetadataMap, file.getInputStream(), file.getContentType(), file.getOriginalFilename());
+            List<CelExpression> celExpressionList = null;
+            if (celExpressions != null) {
+                celExpressionList = objectMapper.readValue(celExpressions, new TypeReference<>() {});
+            }
+            dataAccessService.uploadFileForParticipant(
+                    participantId,
+                    publicMetadataMap,
+                    privateMetadataMap,
+                    file.getInputStream(),
+                    file.getContentType(),
+                    file.getOriginalFilename(),
+                    celExpressionList,
+                    permissions
+            );
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
