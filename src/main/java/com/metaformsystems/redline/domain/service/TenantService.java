@@ -18,7 +18,7 @@ import com.metaformsystems.redline.api.dto.request.DataPlaneRegistrationRequest;
 import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.PartnerReferenceRequest;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
-import com.metaformsystems.redline.api.dto.response.Dataspace;
+import com.metaformsystems.redline.api.dto.response.DataspaceResponse;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.PartnerReference;
 import com.metaformsystems.redline.api.dto.response.Tenant;
@@ -266,7 +266,7 @@ public class TenantService {
     }
 
     @Transactional
-    public List<Dataspace> getParticipantDataspaces(Long participantId) {
+    public List<DataspaceResponse> getParticipantDataspaces(Long participantId) {
         var participant = participantRepository.findById(participantId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var dataspaceIds = participant.getDataspaceInfos().stream()
@@ -277,7 +277,7 @@ public class TenantService {
         }
         var dataspaces = dataspaceRepository.findAllById(dataspaceIds);
         return dataspaces.stream()
-                .map(ds -> new Dataspace(ds.getId(), ds.getName(), ds.getProperties()))
+                .map(ds -> new DataspaceResponse(ds.getId(), ds.getName(), ds.getProperties()))
                 .toList();
     }
 
