@@ -12,10 +12,9 @@
  *
  */
 
-package com.metaformsystems.redline.api.dto.response;
+package com.metaformsystems.redline.api.dto.request;
 
-/**
- *
- */
-public record ServiceProvider(Long id, String name) {
+import java.util.Map;
+
+public record DataspaceRequest(String name, Map<String, Object> properties) {
 }

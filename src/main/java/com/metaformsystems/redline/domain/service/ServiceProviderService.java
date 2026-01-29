@@ -14,8 +14,11 @@
 
 package com.metaformsystems.redline.domain.service;
 
+import com.metaformsystems.redline.api.dto.request.DataspaceRequest;
 import com.metaformsystems.redline.api.dto.request.ServiceProvider;
-import com.metaformsystems.redline.api.dto.response.Dataspace;
+import com.metaformsystems.redline.api.dto.response.DataspaceResponse;
+import com.metaformsystems.redline.api.dto.response.ServiceProviderResponse;
+import com.metaformsystems.redline.domain.entity.Dataspace;
 import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
 import org.springframework.stereotype.Service;
@@ -34,25 +37,36 @@ public class ServiceProviderService {
     }
 
     @Transactional
-    public com.metaformsystems.redline.api.dto.response.ServiceProvider createServiceProvider(ServiceProvider provider) {
+    public DataspaceResponse createDataspace(DataspaceRequest dataspace) {
+        var entity = new Dataspace();
+        entity.setName(dataspace.name());
+        entity.setProperties(dataspace.properties());
+        var saved = dataspaceRepository.save(entity);
+        return new DataspaceResponse(saved.getId(), saved.getName(), saved.getProperties());
+    }
+
+    @Transactional
+    public ServiceProviderResponse createServiceProvider(ServiceProvider provider) {
         var serviceProvider = new com.metaformsystems.redline.domain.entity.ServiceProvider();
         serviceProvider.setName(provider.name());
         var saved = serviceProviderRepository.save(serviceProvider);
-        return new com.metaformsystems.redline.api.dto.response.ServiceProvider(saved.getId(), saved.getName());
+        return new ServiceProviderResponse(saved.getId(), saved.getName());
     }
 
     @Transactional
-    public List<Dataspace> getDataspaces() {
+    public List<DataspaceResponse> getDataspaces() {
         return dataspaceRepository.findAll().stream()
-                .map(dataspace -> new Dataspace(dataspace.getId(), dataspace.getName(), dataspace.getProperties()))
+                .map(dataspace -> new DataspaceResponse(dataspace.getId(), dataspace.getName(), dataspace.getProperties()))
                 .toList();
     }
 
     @Transactional
-    public List<com.metaformsystems.redline.api.dto.response.ServiceProvider> getServiceProviders() {
+    public List<ServiceProviderResponse> getServiceProviders() {
         return serviceProviderRepository.findAll().stream()
-                .map(provider -> new com.metaformsystems.redline.api.dto.response.ServiceProvider(provider.getId(), provider.getName()))
+                .map(provider -> new ServiceProviderResponse(provider.getId(), provider.getName()))
                 .toList();
     }
+
+
 }
 

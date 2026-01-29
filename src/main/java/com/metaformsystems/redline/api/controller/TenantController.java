@@ -15,13 +15,15 @@
 package com.metaformsystems.redline.api.controller;
 
 import com.metaformsystems.redline.api.dto.request.DataPlaneRegistrationRequest;
+import com.metaformsystems.redline.api.dto.request.DataspaceRequest;
 import com.metaformsystems.redline.api.dto.request.ParticipantDeployment;
 import com.metaformsystems.redline.api.dto.request.PartnerReferenceRequest;
 import com.metaformsystems.redline.api.dto.request.ServiceProvider;
 import com.metaformsystems.redline.api.dto.request.TenantRegistration;
-import com.metaformsystems.redline.api.dto.response.Dataspace;
+import com.metaformsystems.redline.api.dto.response.DataspaceResponse;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.PartnerReference;
+import com.metaformsystems.redline.api.dto.response.ServiceProviderResponse;
 import com.metaformsystems.redline.api.dto.response.Tenant;
 import com.metaformsystems.redline.domain.service.ServiceProviderService;
 import com.metaformsystems.redline.domain.service.TenantService;
@@ -57,13 +59,19 @@ public class TenantController {
         this.serviceProviderService = serviceProviderService;
     }
 
+    @PostMapping("dataspaces")
+    public ResponseEntity<DataspaceResponse> createDataspace(@RequestBody DataspaceRequest dataspace) {
+        var saved = serviceProviderService.createDataspace(dataspace);
+        return ResponseEntity.ok(saved);
+    }
+
     @GetMapping("dataspaces")
 //    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Get all dataspaces", description = "Retrieves a list of all available dataspaces")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved dataspaces")
     })
-    public ResponseEntity<List<Dataspace>> getDataspaces() {
+    public ResponseEntity<List<DataspaceResponse>> getDataspaces() {
         return ResponseEntity.ok(serviceProviderService.getDataspaces());
     }
 
@@ -73,7 +81,7 @@ public class TenantController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved service providers")
     })
-    public ResponseEntity<List<com.metaformsystems.redline.api.dto.response.ServiceProvider>> getServiceProviders() {
+    public ResponseEntity<List<ServiceProviderResponse>> getServiceProviders() {
         return ResponseEntity.ok(serviceProviderService.getServiceProviders());
     }
 
@@ -82,10 +90,10 @@ public class TenantController {
     @Operation(summary = "Create a new service provider", description = "Registers a new service provider in the system")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Service provider successfully created",
-                    content = @Content(schema = @Schema(implementation = com.metaformsystems.redline.api.dto.response.ServiceProvider.class))),
+                    content = @Content(schema = @Schema(implementation = ServiceProviderResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid service provider data")
     })
-    public ResponseEntity<com.metaformsystems.redline.api.dto.response.ServiceProvider> createServiceProvider(@RequestBody ServiceProvider serviceProvider) {
+    public ResponseEntity<ServiceProviderResponse> createServiceProvider(@RequestBody ServiceProvider serviceProvider) {
         var saved = serviceProviderService.createServiceProvider(serviceProvider);
         return ResponseEntity.ok(saved);
     }
@@ -217,10 +225,10 @@ public class TenantController {
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
     @Parameter(name = "dataspaceId", description = "Database ID of the dataspace", required = true)
     public ResponseEntity<PartnerReference> createPartner(@PathVariable Long providerId,
-                                                         @PathVariable Long tenantId,
-                                                         @PathVariable Long participantId,
-                                                         @PathVariable Long dataspaceId,
-                                                         @RequestBody PartnerReferenceRequest request) {
+                                                          @PathVariable Long tenantId,
+                                                          @PathVariable Long participantId,
+                                                          @PathVariable Long dataspaceId,
+                                                          @RequestBody PartnerReferenceRequest request) {
         var partnerReference = tenantService.createPartnerReference(providerId, tenantId, participantId, dataspaceId, request);
         // TODO auth check for provider access
         return ResponseEntity.ok(partnerReference);
@@ -236,9 +244,9 @@ public class TenantController {
     @Parameter(name = "serviceProviderId", description = "Database ID of the service provider", required = true)
     @Parameter(name = "tenantId", description = "Database ID of the tenant", required = true)
     @Parameter(name = "participantId", description = "Database ID of the participant", required = true)
-    public ResponseEntity<List<Dataspace>> getParticipantDataspaces(@PathVariable Long serviceProviderId,
-                                                                    @PathVariable Long tenantId,
-                                                                    @PathVariable Long participantId) {
+    public ResponseEntity<List<DataspaceResponse>> getParticipantDataspaces(@PathVariable Long serviceProviderId,
+                                                                            @PathVariable Long tenantId,
+                                                                            @PathVariable Long participantId) {
         var dataspaces = tenantService.getParticipantDataspaces(participantId);
         // TODO auth check for provider access
         return ResponseEntity.ok(dataspaces);

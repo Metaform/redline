@@ -14,8 +14,10 @@
 
 package com.metaformsystems.redline.api.dto.response;
 
+import java.util.Map;
+
 /**
  *
  */
-public record Dataspace(Long id, String name, java.util.Map<String, Object> properties) {
+public record DataspaceResponse(Long id, String name, Map<String, Object> properties) {
 }
