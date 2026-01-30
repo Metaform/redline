@@ -18,7 +18,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaformsystems.redline.api.dto.request.ContractRequest;
 import com.metaformsystems.redline.api.dto.request.CounterPartyIdWrapper;
-import com.metaformsystems.redline.api.dto.request.FileUploadRequest;
 import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
 import com.metaformsystems.redline.api.dto.response.Contract;
 import com.metaformsystems.redline.api.dto.response.ContractNegotiation;
@@ -28,26 +27,17 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -82,7 +72,7 @@ public class EdcDataController {
                                            @RequestPart("publicMetadata") String publicMetadata,
                                            @RequestPart("privateMetadata") String privateMetadata,
                                            @RequestPart(value = "celExpressions", required = false) String celExpressions,
-                                           @RequestPart(value = "permissions", required = false) PolicySet permissions,
+                                           @RequestPart(value = "constraints", required = false) String constraints,
                                            @RequestPart("file") MultipartFile file) {
 
         try {
@@ -92,6 +82,10 @@ public class EdcDataController {
             if (celExpressions != null) {
                 celExpressionList = objectMapper.readValue(celExpressions, new TypeReference<>() {});
             }
+            List<PolicySet.Constraint> constraintList = null;
+            if (constraints != null) {
+                constraintList = objectMapper.readValue(constraints, new TypeReference<>() {});
+            }
             dataAccessService.uploadFileForParticipant(
                     participantId,
                     publicMetadataMap,
@@ -100,7 +94,7 @@ public class EdcDataController {
                     file.getContentType(),
                     file.getOriginalFilename(),
                     celExpressionList,
-                    permissions
+                    constraintList
             );
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();

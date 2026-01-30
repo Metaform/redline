@@ -38,11 +38,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.metaformsystems.redline.domain.service.Constants.ASSET_PERMISSION;
-import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_CONTRACT_DEFINITION;
-import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_EXPRESSION;
-import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_EXPRESSION_ID;
-import static com.metaformsystems.redline.domain.service.Constants.MEMBERSHIP_POLICY;
+import static com.metaformsystems.redline.domain.service.Constants.*;
 
 @Service
 public class DataAccessService {
@@ -62,7 +58,7 @@ public class DataAccessService {
     }
 
     @Transactional
-    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, List<CelExpression> celExpressions, PolicySet permissions) {
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, List<CelExpression> celExpressions, List<PolicySet.Constraint> constraints) {
 
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var participantContextId = participant.getParticipantContextId();
@@ -107,22 +103,23 @@ public class DataAccessService {
         }
 
         //2. create policy
-        var policy = MEMBERSHIP_POLICY;
-        if (permissions != null) {
-            var permissionList = new ArrayList<>(policy.getPolicy().getPermission());
-            permissionList.addAll(permissions.getPermission());
-            policy.getPolicy().setPermission(permissionList);
+        var policy = NewPolicyDefinition.Builder.aNewPolicyDefinition()
+                .id(UUID.randomUUID().toString())
+                .policy(new PolicySet(List.of(new PolicySet.Permission("use",
+                        new ArrayList<>(List.of(MEMBERSHIP_CONSTRAINT))
+                )))).build();
+        if (constraints != null) {
+            policy.getPolicy().getPermission().getFirst().getConstraint().addAll(constraints);
         }
-        policy.setId(UUID.randomUUID().toString());
         managementApiClient.createPolicy(participantContextId, policy);
 
         //3. create contract definition if none exists
-        var contractDef = MEMBERSHIP_CONTRACT_DEFINITION;
-        contractDef.setId(UUID.randomUUID().toString());
-        contractDef.setContractPolicyId(policy.getId());
-        contractDef.setAccessPolicyId(policy.getId());
-        contractDef.setAssetsSelector(Set.of(new Criterion("id", "=", assetId)));
-        managementApiClient.createContractDefinition(participantContextId, contractDef);
+        var contractDef = NewContractDefinition.Builder.aNewContractDefinition();
+        contractDef.id(UUID.randomUUID().toString());
+        contractDef.contractPolicyId(policy.getId());
+        contractDef.accessPolicyId(policy.getId());
+        contractDef.assetsSelector(Set.of(new Criterion("id", "=", assetId)));
+        managementApiClient.createContractDefinition(participantContextId, contractDef.build());
 
 
         //2. track uploaded file in DB
