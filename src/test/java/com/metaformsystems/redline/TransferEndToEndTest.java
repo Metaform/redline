@@ -25,6 +25,7 @@ import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.Tenant;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
 import io.restassured.http.ContentType;
@@ -39,6 +40,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.restassured.RestAssured.given;
@@ -80,11 +82,21 @@ public class TransferEndToEndTest {
 
         log.info("uploading file to provider");
         // upload file for consumer - this creates asset, policy, contract-def, etc.
+        var celExpressions = List.of(CelExpression.Builder.aNewCelExpression()
+                .id("counter-party-id-" + slug)
+                .leftOperand("CounterPartyId")
+                .description("Counter Party Access Policy")
+                .expression("ctx.agent.id == this.rightOperand")
+                .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
+                .build());
+        var constraints = List.of(new Constraint("CounterPartyId", "eq", consumerDid));
         baseRequest()
                 .contentType(ContentType.MULTIPART)
                 .multiPart("file", "testfile.txt", "This is a test file.".getBytes())
                 .multiPart("publicMetadata", "{\"slug\": \"%s\"}".formatted(slug), "application/json")
                 .multiPart("privateMetadata", "{\"privateSlug\": \"%s\"}".formatted(slug), "application/json")
+                .multiPart("celExpressions", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(celExpressions), "application/json")
+                .multiPart("constraints", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(constraints), "application/json")
                 .post("/api/ui/service-providers/%s/tenants/%s/participants/%s/files".formatted(SERVICE_PROVIDER_ID, provider.tenantId(), provider.participantId()))
                 .then()
                 .statusCode(200);
