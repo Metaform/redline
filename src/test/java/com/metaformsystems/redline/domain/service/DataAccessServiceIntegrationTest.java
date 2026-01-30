@@ -27,8 +27,10 @@ import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.domain.repository.TenantRepository;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Obligation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
+import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +50,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -151,6 +154,56 @@ class DataAccessServiceIntegrationTest {
 
         // both requests hit the remote catalog, no cache
         assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldUploadFileWithCelExpressionsAndConstraints() {
+        var participant = createAndSaveParticipant("ctx-upload-1", "did:web:me");
+
+        // custom CEL expression
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // dataplane upload response
+        mockWebServer.enqueue(new MockResponse()
+                .setBody("{\"id\": \"generated-file-id-123\"}")
+                .addHeader("Content-Type", "application/json"));
+
+        // asset creation
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // membership CEL expression
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // policy creation
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        // contract definition
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        var celExpressions = List.of(CelExpression.Builder.aNewCelExpression()
+                .id("custom-expression")
+                .leftOperand("CustomCredential")
+                .description("Custom expression")
+                .expression("true")
+                .scopes(Set.of("catalog"))
+                .build());
+
+        var constraints = List.of(new PolicySet.Constraint("purpose", "eq", "test"));
+
+        dataAccessService.uploadFileForParticipant(
+                participant.getId(),
+                new java.util.HashMap<>(Map.of("foo", "bar")),
+                new java.util.HashMap<>(Map.of("private", "value")),
+                new java.io.ByteArrayInputStream("file-data".getBytes()),
+                "text/plain",
+                "file.txt",
+                celExpressions,
+                constraints
+        );
+
+        assertThat(participantRepository.findById(participant.getId()))
+                .isPresent()
+                .hasValueSatisfying(p -> assertThat(p.getUploadedFiles()).hasSize(1));
     }
 
     @Test
