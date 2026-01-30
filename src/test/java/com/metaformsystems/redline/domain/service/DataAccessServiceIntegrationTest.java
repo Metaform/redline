@@ -94,6 +94,8 @@ class DataAccessServiceIntegrationTest {
         registry.add("tenant-manager.url", () -> "http://%s:%s/tm".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("vault.url", () -> "http://%s:%s/vault".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("controlplane.url", () -> "http://%s:%s/cp".formatted(mockBackEndHost, mockBackEndPort));
+        registry.add("dataplane.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
+        registry.add("dataplane.internal.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
     }
 
     @AfterEach
