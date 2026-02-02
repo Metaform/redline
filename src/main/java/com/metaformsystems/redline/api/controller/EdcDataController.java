@@ -85,23 +85,16 @@ public class EdcDataController {
     public ResponseEntity<Void> uploadFile(@PathVariable Long participantId,
                                            @PathVariable Long tenantId,
                                            @PathVariable Long providerId,
-                                           @RequestPart("publicMetadata") String publicMetadata,
-                                           @RequestPart("privateMetadata") String privateMetadata,
-                                           @RequestPart(value = "celExpressions", required = false) String celExpressionsString,
+                                           @RequestPart("publicMetadata") Map<String, Object> publicMetadata,
+                                           @RequestPart("privateMetadata") Map<String, Object> privateMetadata,
+                                           @RequestPart(value = "celExpressions", required = false) List<CelExpression> celExpressions,
                                            @RequestPart(value = "policySet", required = false) PolicySet policySet,
                                            @RequestPart("file") MultipartFile file) {
-
         try {
-            var publicMetadataMap = objectMapper.readValue(publicMetadata, new TypeReference<Map<String, Object>>() {});
-            var privateMetadataMap = objectMapper.readValue(privateMetadata, new TypeReference<Map<String, Object>>() {});
-            List<CelExpression> celExpressions = null;
-            if (celExpressionsString != null) {
-                celExpressions = objectMapper.readValue(celExpressionsString, new TypeReference<>() {});
-            }
             dataAccessService.uploadFileForParticipant(
                     participantId,
-                    publicMetadataMap,
-                    privateMetadataMap,
+                    publicMetadata,
+                    privateMetadata,
                     file.getInputStream(),
                     file.getContentType(),
                     file.getOriginalFilename(),
