@@ -73,7 +73,7 @@ public class EdcDataController {
                                            @RequestPart("publicMetadata") String publicMetadata,
                                            @RequestPart("privateMetadata") String privateMetadata,
                                            @RequestPart(value = "celExpressions", required = false) String celExpressionsString,
-                                           @RequestPart(value = "policySet", required = false) String policySetString,
+                                           @RequestPart(value = "policySet", required = false) PolicySet policySet,
                                            @RequestPart("file") MultipartFile file) {
 
         try {
@@ -82,10 +82,6 @@ public class EdcDataController {
             List<CelExpression> celExpressions = null;
             if (celExpressionsString != null) {
                 celExpressions = objectMapper.readValue(celExpressionsString, new TypeReference<>() {});
-            }
-            PolicySet policySet = null;
-            if (policySetString != null) {
-                policySet = objectMapper.readValue(policySetString, new TypeReference<>() {});
             }
             dataAccessService.uploadFileForParticipant(
                     participantId,
