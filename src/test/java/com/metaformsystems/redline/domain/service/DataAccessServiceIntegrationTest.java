@@ -191,7 +191,8 @@ class DataAccessServiceIntegrationTest {
                 .scopes(Set.of("catalog"))
                 .build());
 
-        var constraints = List.of(new PolicySet.Constraint("purpose", "eq", "test"));
+        var policySet = new PolicySet(List.of(new PolicySet.Permission("use",
+                List.of(new PolicySet.Constraint("purpose", "eq", "test")))));
 
         dataAccessService.uploadFileForParticipant(
                 participant.getId(),
@@ -201,7 +202,7 @@ class DataAccessServiceIntegrationTest {
                 "text/plain",
                 "file.txt",
                 celExpressions,
-                constraints
+                policySet
         );
 
         assertThat(participantRepository.findById(participant.getId()))

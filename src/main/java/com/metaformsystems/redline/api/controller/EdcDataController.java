@@ -72,20 +72,20 @@ public class EdcDataController {
                                            @PathVariable Long providerId,
                                            @RequestPart("publicMetadata") String publicMetadata,
                                            @RequestPart("privateMetadata") String privateMetadata,
-                                           @RequestPart(value = "celExpressions", required = false) String celExpressions,
-                                           @RequestPart(value = "constraints", required = false) String constraints,
+                                           @RequestPart(value = "celExpressions", required = false) String celExpressionsString,
+                                           @RequestPart(value = "policySet", required = false) String policySetString,
                                            @RequestPart("file") MultipartFile file) {
 
         try {
             var publicMetadataMap = objectMapper.readValue(publicMetadata, new TypeReference<Map<String, Object>>() {});
             var privateMetadataMap = objectMapper.readValue(privateMetadata, new TypeReference<Map<String, Object>>() {});
-            List<CelExpression> celExpressionList = null;
-            if (celExpressions != null) {
-                celExpressionList = objectMapper.readValue(celExpressions, new TypeReference<>() {});
+            List<CelExpression> celExpressions = null;
+            if (celExpressionsString != null) {
+                celExpressions = objectMapper.readValue(celExpressionsString, new TypeReference<>() {});
             }
-            List<PolicySet.Constraint> constraintList = null;
-            if (constraints != null) {
-                constraintList = objectMapper.readValue(constraints, new TypeReference<>() {});
+            PolicySet policySet = null;
+            if (policySetString != null) {
+                policySet = objectMapper.readValue(policySetString, new TypeReference<>() {});
             }
             dataAccessService.uploadFileForParticipant(
                     participantId,
@@ -94,8 +94,8 @@ public class EdcDataController {
                     file.getInputStream(),
                     file.getContentType(),
                     file.getOriginalFilename(),
-                    celExpressionList,
-                    constraintList
+                    celExpressions,
+                    policySet
             );
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();

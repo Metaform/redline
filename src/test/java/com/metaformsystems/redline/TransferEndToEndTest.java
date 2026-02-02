@@ -25,10 +25,7 @@ import com.metaformsystems.redline.api.dto.response.DeploymentState;
 import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.api.dto.response.Participant;
 import com.metaformsystems.redline.api.dto.response.Tenant;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
-import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
-import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
-import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
+import com.metaformsystems.redline.infrastructure.client.management.dto.*;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.Test;
@@ -50,7 +47,7 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * This test runs through a full participant deployment for consumer and provider plus a data transfer between them.
- * For this test a running instance of JAD is required, and the Redline API Server must be reachable at http://redline.localhost.
+ * For this test a running instance of JAD is required, and the Redline API Server must be reachable at http://redline.localhost:8080.
  */
 @EnabledIfEnvironmentVariable(named = "ENABLE_E2E_TESTS", matches = "true", disabledReason = "This can only run if ENABLE_E2E_TESTS=true is set in the environment.")
 public class TransferEndToEndTest {
@@ -90,14 +87,15 @@ public class TransferEndToEndTest {
                 .expression("ctx.agent.id == this.rightOperand")
                 .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
                 .build());
-        var constraints = List.of(new Constraint("CounterPartyId", "eq", consumerDid));
+        var policySet = new PolicySet(List.of(new PolicySet.Permission("use",
+                List.of(new PolicySet.Constraint("CounterPartyId", "eq", consumerDid)))));
         baseRequest()
                 .contentType(ContentType.MULTIPART)
                 .multiPart("file", "testfile.txt", "This is a test file.".getBytes())
                 .multiPart("publicMetadata", "{\"slug\": \"%s\"}".formatted(slug), "application/json")
                 .multiPart("privateMetadata", "{\"privateSlug\": \"%s\"}".formatted(slug), "application/json")
                 .multiPart("celExpressions", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(celExpressions), "application/json")
-                .multiPart("constraints", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(constraints), "application/json")
+                .multiPart("constraints", new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(policySet), "application/json")
                 .post("/api/ui/service-providers/%s/tenants/%s/participants/%s/files".formatted(SERVICE_PROVIDER_ID, provider.tenantId(), provider.participantId()))
                 .then()
                 .statusCode(200);
