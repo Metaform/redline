@@ -77,7 +77,7 @@ public class DataAccessService {
     }
 
     @Transactional
-    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, ArrayList<CelExpression> celExpressions,  PolicySet policySet) {
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, List<CelExpression> celExpressions,  PolicySet policySet) {
 
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var participantContextId = participant.getParticipantContextId();
@@ -91,14 +91,15 @@ public class DataAccessService {
         var fileId = response.id();
 
         //1. create CEL expressions
-        celExpressions.add(CelExpression.Builder.aNewCelExpression()
+        var expressions = new ArrayList<>(celExpressions);
+        expressions.add(CelExpression.Builder.aNewCelExpression()
                 .id(MEMBERSHIP_EXPRESSION_ID)
                 .leftOperand("MembershipCredential")
                 .description("Expression for evaluating membership credential")
                 .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
                 .expression(MEMBERSHIP_EXPRESSION)
                 .build());
-        celExpressions.forEach(celExpression -> {
+        expressions.forEach(celExpression -> {
             try {
                 managementApiClient.createCelExpression(celExpression);
             } catch (WebClientResponseException.Conflict e) {

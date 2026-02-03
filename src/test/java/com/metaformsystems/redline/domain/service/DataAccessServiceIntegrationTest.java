@@ -183,13 +183,13 @@ class DataAccessServiceIntegrationTest {
         // contract definition
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-        var celExpressions = new ArrayList<>(List.of(CelExpression.Builder.aNewCelExpression()
+        var celExpressions = List.of(CelExpression.Builder.aNewCelExpression()
                 .id("custom-expression")
                 .leftOperand("CustomCredential")
                 .description("Custom expression")
                 .expression("true")
                 .scopes(Set.of("catalog"))
-                .build()));
+                .build());
 
         var policySet = new PolicySet(List.of(new PolicySet.Permission("use",
                 List.of(new PolicySet.Constraint("purpose", "eq", "test")))));
