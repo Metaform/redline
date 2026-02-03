@@ -163,13 +163,13 @@ class DataAccessServiceIntegrationTest {
     void shouldUploadFileWithCelExpressionsAndConstraints() {
         var participant = createAndSaveParticipant("ctx-upload-1", "did:web:me");
 
-        // custom CEL expression
-        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-
         // dataplane upload response
         mockWebServer.enqueue(new MockResponse()
                 .setBody("{\"id\": \"generated-file-id-123\"}")
                 .addHeader("Content-Type", "application/json"));
+
+        // custom CEL expression
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
         // asset creation
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
@@ -183,13 +183,13 @@ class DataAccessServiceIntegrationTest {
         // contract definition
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-        var celExpressions = List.of(CelExpression.Builder.aNewCelExpression()
+        var celExpressions = new ArrayList<>(List.of(CelExpression.Builder.aNewCelExpression()
                 .id("custom-expression")
                 .leftOperand("CustomCredential")
                 .description("Custom expression")
                 .expression("true")
                 .scopes(Set.of("catalog"))
-                .build());
+                .build()));
 
         var policySet = new PolicySet(List.of(new PolicySet.Permission("use",
                 List.of(new PolicySet.Constraint("purpose", "eq", "test")))));

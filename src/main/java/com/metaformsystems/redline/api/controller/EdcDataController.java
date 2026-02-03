@@ -54,8 +54,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @Tag(name = "EDC data operations", description = "UI API for uploading and downloading data, managing EDC data transfers, and related operations")
@@ -87,8 +89,8 @@ public class EdcDataController {
                                            @PathVariable Long providerId,
                                            @RequestPart("publicMetadata") Map<String, Object> publicMetadata,
                                            @RequestPart("privateMetadata") Map<String, Object> privateMetadata,
-                                           @RequestPart(value = "celExpressions", required = false) List<CelExpression> celExpressions,
-                                           @RequestPart(value = "policySet", required = false) PolicySet policySet,
+                                           @RequestPart(name = "celExpressions", required = false) Optional<ArrayList<CelExpression>> celExpressions,
+                                           @RequestPart(name = "policySet", required = false) PolicySet policySet,
                                            @RequestPart("file") MultipartFile file) {
         try {
             dataAccessService.uploadFileForParticipant(
@@ -98,7 +100,7 @@ public class EdcDataController {
                     file.getInputStream(),
                     file.getContentType(),
                     file.getOriginalFilename(),
-                    celExpressions,
+                    celExpressions.orElseGet(ArrayList::new),
                     policySet
             );
         } catch (IOException e) {

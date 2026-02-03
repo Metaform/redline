@@ -174,14 +174,14 @@ public class EdcDataControllerTest {
         var constraints = new MockPart("constraints", "[{\"leftOperand\":\"purpose\",\"operator\":\"eq\",\"rightOperand\":\"test\"}]".getBytes());
         constraints.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        // mock create-cel-expression (custom)
-        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-
         // Mock the upload response from the dataplane
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody("{\"id\": \"generated-file-id-123\"}")
                 .addHeader("Content-Type", "application/json"));
+
+        // mock create-cel-expression (custom)
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
         // mock create-asset
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));

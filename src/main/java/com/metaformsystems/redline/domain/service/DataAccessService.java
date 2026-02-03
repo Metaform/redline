@@ -16,7 +16,6 @@
 package com.metaformsystems.redline.domain.service;
 
 import com.metaformsystems.redline.api.dto.request.TransferProcessRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.api.dto.response.FileResource;
 import com.metaformsystems.redline.domain.entity.UploadedFile;
 import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
@@ -27,6 +26,7 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
 import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
+import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Criterion;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewContractDefinition;
 import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolicyDefinition;
@@ -77,22 +77,10 @@ public class DataAccessService {
     }
 
     @Transactional
-    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, List<CelExpression> celExpressions,  PolicySet policySet) {
+    public void uploadFileForParticipant(Long participantId, Map<String, Object> publicMetadata, Map<String, Object> privateMetadata, InputStream fileStream, String contentType, String originalFilename, ArrayList<CelExpression> celExpressions,  PolicySet policySet) {
 
         var participant = participantRepository.findById(participantId).orElseThrow(() -> new ObjectNotFoundException("Participant not found with id: " + participantId));
         var participantContextId = participant.getParticipantContextId();
-
-
-        //-1. create CEL expressions
-        if (celExpressions != null) {
-            celExpressions.forEach(celExpression -> {
-                try {
-                    managementApiClient.createCelExpression(celExpression);
-                } catch (WebClientResponseException.Conflict e) {
-                    //do nothing, CEL expression already exists
-                }
-            });
-        }
 
         //0. upload file to data plane
         var assetId = UUID.randomUUID().toString();
@@ -102,26 +90,28 @@ public class DataAccessService {
         var response = dataPlaneApiClient.uploadMultipart(participantContextId, combinedMetadata, fileStream);
         var fileId = response.id();
 
-        //1. create asset
-        publicMetadata.put("fileId", fileId);
+        //1. create CEL expressions
+        celExpressions.add(CelExpression.Builder.aNewCelExpression()
+                .id(MEMBERSHIP_EXPRESSION_ID)
+                .leftOperand("MembershipCredential")
+                .description("Expression for evaluating membership credential")
+                .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
+                .expression(MEMBERSHIP_EXPRESSION)
+                .build());
+        celExpressions.forEach(celExpression -> {
+            try {
+                managementApiClient.createCelExpression(celExpression);
+            } catch (WebClientResponseException.Conflict e) {
+                //do nothing, CEL expression already exists
+            }
+        });
 
+        //2. create asset
+        publicMetadata.put("fileId", fileId);
         var asset = createAsset(assetId, publicMetadata, privateMetadata, contentType, originalFilename);
         managementApiClient.createAsset(participantContextId, asset);
 
-        // create CEL expression
-        try {
-            managementApiClient.createCelExpression(CelExpression.Builder.aNewCelExpression()
-                    .id(MEMBERSHIP_EXPRESSION_ID)
-                    .leftOperand("MembershipCredential")
-                    .description("Expression for evaluating membership credential")
-                    .scopes(Set.of("catalog", "contract.negotiation", "transfer.process"))
-                    .expression(MEMBERSHIP_EXPRESSION)
-                    .build());
-        } catch (WebClientResponseException.Conflict e) {
-            //do nothing, CEL expression already exists
-        }
-
-        //2. create policy
+        //3. create policy
         if (policySet != null) {
             var constraints = new ArrayList<>(List.of(MEMBERSHIP_CONSTRAINT));
             constraints.addAll(policySet.getPermission().getFirst().getConstraint());
@@ -136,7 +126,7 @@ public class DataAccessService {
                 .policy(policySet).build();
         managementApiClient.createPolicy(participantContextId, policy);
 
-        //3. create contract definition if none exists
+        //4. create contract definition if none exists
         var contractDef = NewContractDefinition.Builder.aNewContractDefinition()
                 .id(UUID.randomUUID().toString())
                 .contractPolicyId(policy.getId())
@@ -146,7 +136,7 @@ public class DataAccessService {
         managementApiClient.createContractDefinition(participantContextId, contractDef);
 
 
-        //2. track uploaded file in DB
+        //5. track uploaded file in DB
         participant.getUploadedFiles().add(new UploadedFile(fileId, originalFilename, contentType, combinedMetadata));
     }
 
