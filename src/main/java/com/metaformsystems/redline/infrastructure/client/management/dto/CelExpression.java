@@ -21,8 +21,7 @@ import java.util.Set;
 public class CelExpression {
     @JsonProperty("@context")
     private final String[] context = new String[]{
-            "https://w3id.org/edc/connector/management/v2",
-            "https://w3id.org/edc/virtual-connector/management/v2"
+            "https://w3id.org/edc/connector/management/v2"
     };
 
     @JsonProperty("@type")
