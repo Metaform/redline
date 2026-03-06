@@ -26,9 +26,9 @@ import com.metaformsystems.redline.domain.repository.DataspaceRepository;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.domain.repository.ServiceProviderRepository;
 import com.metaformsystems.redline.domain.repository.TenantRepository;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Constraint;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
-import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Obligation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Offer;
 import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
@@ -276,11 +276,11 @@ class DataAccessServiceIntegrationTest {
         assertThat(result.stream().filter(cn -> cn.getId().equals("negotiation-2")).findFirst().orElseThrow().getContractAgreement()).isNull();
 
         var contractsRequest = mockWebServer.takeRequest();
-        assertThat(contractsRequest.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-4/contractnegotiations/request");
+        assertThat(contractsRequest.getPath()).isEqualTo("/cp/v5alpha/participants/ctx-4/contractnegotiations/request");
         assertThat(contractsRequest.getMethod()).isEqualTo("POST");
 
         var agreementRequest = mockWebServer.takeRequest();
-        assertThat(agreementRequest.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-4/contractnegotiations/negotiation-1/agreement");
+        assertThat(agreementRequest.getPath()).isEqualTo("/cp/v5alpha/participants/ctx-4/contractnegotiations/negotiation-1/agreement");
         assertThat(agreementRequest.getMethod()).isEqualTo("GET");
 
     }
@@ -342,7 +342,7 @@ class DataAccessServiceIntegrationTest {
         assertThat(result).isEqualTo("negotiation-123");
 
         var request = mockWebServer.takeRequest();
-        assertThat(request.getPath()).isEqualTo("/cp/v4alpha/participants/ctx-6/contractnegotiations");
+        assertThat(request.getPath()).isEqualTo("/cp/v5alpha/participants/ctx-6/contractnegotiations");
         assertThat(request.getMethod()).isEqualTo("POST");
     }
 

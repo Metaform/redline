@@ -72,7 +72,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
         var token = getToken(participantContextId);
 
         controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/%s/assets".formatted(participantContextId))
+                .uri("/v5alpha/participants/%s/assets".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(token))
                 .bodyValue(asset)
                 .retrieve()
@@ -83,7 +83,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<Map<String, Object>> queryAssets(String participantContextId, QuerySpec query) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/assets/request", encode(participantContextId))
+                .uri("/v5alpha/participants/{participantContextId}/assets/request", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(query)
                 .retrieve()
@@ -95,7 +95,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void deleteAsset(String participantContextId, String assetId) {
         controlPlaneWebClient.delete()
-                .uri("/v4alpha/participants/{participantContextId}/assets/{assetId}", encode(participantContextId), assetId)
+                .uri("/v5alpha/participants/{participantContextId}/assets/{assetId}", encode(participantContextId), assetId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .toBodilessEntity()
@@ -105,7 +105,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void createPolicy(String participantContextId, NewPolicyDefinition policy) {
         controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/%s/policydefinitions".formatted(participantContextId))
+                .uri("/v5alpha/participants/%s/policydefinitions".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(policy)
                 .retrieve()
@@ -116,7 +116,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<Map<String, Object>> queryPolicyDefinitions(String participantContextId, QuerySpec query) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/policydefinitions/request", encode(participantContextId))
+                .uri("/v5alpha/participants/{participantContextId}/policydefinitions/request", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(query)
                 .retrieve()
@@ -128,7 +128,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void deletePolicyDefinition(String participantContextId, String policyId) {
         controlPlaneWebClient.delete()
-                .uri("/v4alpha/participants/{participantContextId}/policydefinitions/{policyId}", encode(participantContextId), policyId)
+                .uri("/v5alpha/participants/{participantContextId}/policydefinitions/{policyId}", encode(participantContextId), policyId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .toBodilessEntity()
@@ -137,7 +137,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
     public void createContractDefinition(String participantContextId, NewContractDefinition contractDefinition) {
         controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/%s/contractdefinitions".formatted(participantContextId))
+                .uri("/v5alpha/participants/%s/contractdefinitions".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(contractDefinition)
                 .retrieve()
@@ -148,7 +148,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<Map<String, Object>> queryContractDefinitions(String participantContextId, QuerySpec query) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/contractdefinitions/request", participantContextId)
+                .uri("/v5alpha/participants/{participantContextId}/contractdefinitions/request", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(query)
                 .retrieve()
@@ -160,7 +160,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void deleteContractDefinition(String participantContextId, String contractDefinitionId) {
         controlPlaneWebClient.delete()
-                .uri("/v4alpha/participants/{participantContextId}/contractdefinitions/{id}", participantContextId, contractDefinitionId)
+                .uri("/v5alpha/participants/{participantContextId}/contractdefinitions/{id}", participantContextId, contractDefinitionId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .toBodilessEntity()
@@ -177,7 +177,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
             throw new RuntimeException(e);
         }
         var response = controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations", participantContextId)
+                .uri("/v5alpha/participants/{participantContextId}/contractnegotiations", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(negotiationRequest)
                 .retrieve()
@@ -191,7 +191,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public ContractNegotiation getContractNegotiation(String participantContextId, String negotiationId) {
         return controlPlaneWebClient.get()
-                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/{id}", participantContextId, negotiationId)
+                .uri("/v5alpha/participants/{participantContextId}/contractnegotiations/{id}", participantContextId, negotiationId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ContractNegotiation>() {
@@ -202,7 +202,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<Map<String, Object>> queryContractNegotiations(String participantContextId, QuerySpec query) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/request", encode(participantContextId))
+                .uri("/v5alpha/participants/{participantContextId}/contractnegotiations/request", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(query)
                 .retrieve()
@@ -216,7 +216,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
         var token = tokenProvider.getToken(adminCredentials.clientId(), adminCredentials.clientSecret(), "management-api:write management-api:read");
         controlPlaneWebClient.post()
-                .uri("/v4alpha/celexpressions")
+                .uri("/v5alpha/celexpressions")
                 .header("Authorization", "Bearer %s".formatted(token))
                 .bodyValue(celExpression)
                 .retrieve()
@@ -241,7 +241,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<TransferProcess> listTransferProcesses(String participantContextId) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/transferprocesses/request", participantContextId)
+                .uri("/v5alpha/participants/{participantContextId}/transferprocesses/request", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<TransferProcess>>() {
@@ -252,7 +252,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public String initiateTransferProcess(String participantContextId, TransferRequest request) {
         var response = controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/transferprocesses", participantContextId)
+                .uri("/v5alpha/participants/{participantContextId}/transferprocesses", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .bodyValue(request)
                 .retrieve()
@@ -266,7 +266,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public TransferProcess getTransferProcess(String participantContextId, String transferProcessId) {
         return controlPlaneWebClient.get()
-                .uri("/v4alpha/participants/{participantContextId}/transferprocesses/{transferProcessId}", participantContextId, transferProcessId)
+                .uri("/v5alpha/participants/{participantContextId}/transferprocesses/{transferProcessId}", participantContextId, transferProcessId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(TransferProcess.class)
@@ -288,7 +288,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration) {
         controlPlaneWebClient.post()
-                .uri("/v4alpha/dataplanes/%s".formatted(participantContextId))
+                .uri("/v5alpha/dataplanes/%s".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(dataplaneRegistration)
                 .retrieve()
@@ -313,7 +313,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public List<ContractNegotiation> listContracts(String participantContextId) {
         return controlPlaneWebClient.post()
-                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/request", participantContextId)
+                .uri("/v5alpha/participants/{participantContextId}/contractnegotiations/request", participantContextId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -325,7 +325,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public ContractAgreement getAgreement(String participantContextId, String negotiationId) {
         return controlPlaneWebClient.get()
-                .uri("/v4alpha/participants/{participantContextId}/contractnegotiations/{negotiationId}/agreement", participantContextId, negotiationId)
+                .uri("/v5alpha/participants/{participantContextId}/contractnegotiations/{negotiationId}/agreement", participantContextId, negotiationId)
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(ContractAgreement.class)
