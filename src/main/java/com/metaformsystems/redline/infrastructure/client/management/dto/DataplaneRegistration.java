@@ -17,18 +17,11 @@ package com.metaformsystems.redline.infrastructure.client.management.dto;
 import java.util.List;
 
 public class DataplaneRegistration {
-    private List<String> allowedSourceTypes;
+    private String id;
     private List<String> allowedTransferTypes;
     private String url;
-    private List<String> destinationProvisionTypes;
+    private List<String> labels;
 
-    public List<String> getAllowedSourceTypes() {
-        return allowedSourceTypes;
-    }
-
-    public void setAllowedSourceTypes(List<String> allowedSourceTypes) {
-        this.allowedSourceTypes = allowedSourceTypes;
-    }
 
     public List<String> getAllowedTransferTypes() {
         return allowedTransferTypes;
@@ -36,6 +29,10 @@ public class DataplaneRegistration {
 
     public void setAllowedTransferTypes(List<String> allowedTransferTypes) {
         this.allowedTransferTypes = allowedTransferTypes;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getUrl() {
@@ -46,12 +43,8 @@ public class DataplaneRegistration {
         this.url = url;
     }
 
-    public List<String> getDestinationProvisionTypes() {
-        return destinationProvisionTypes;
-    }
-
-    public void setDestinationProvisionTypes(List<String> destinationProvisionTypes) {
-        this.destinationProvisionTypes = destinationProvisionTypes;
+    public List<String> getLabels() {
+        return labels;
     }
 
     public static final class Builder {
@@ -65,8 +58,13 @@ public class DataplaneRegistration {
             return new Builder();
         }
 
-        public Builder allowedSourceTypes(List<String> allowedSourceTypes) {
-            dataplaneRegistration.setAllowedSourceTypes(allowedSourceTypes);
+        public Builder id(String id) {
+            dataplaneRegistration.id = id;
+            return this;
+        }
+
+        public Builder labels(List<String> labels) {
+            dataplaneRegistration.labels = labels;
             return this;
         }
 
@@ -84,9 +82,5 @@ public class DataplaneRegistration {
             return dataplaneRegistration;
         }
 
-        public Builder destinationProvisionTypes(List<String> httpData) {
-            dataplaneRegistration.setDestinationProvisionTypes(httpData);
-            return this;
-        }
     }
 }

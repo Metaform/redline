@@ -356,10 +356,8 @@ public class OnboardingEndToEndTest {
 
     private void registerDataPlane(String participantContextId) {
         managementApiClient.prepareDataplane(participantContextId, DataplaneRegistration.Builder.aDataplaneRegistration()
-                .allowedSourceTypes(List.of("HttpData", "HttpCertData"))
                 .allowedTransferTypes(List.of("HttpData-PULL"))
-                .destinationProvisionTypes(List.of("HttpData", "HttpCertData", "httpData", "httpCertData"))
-                .url("http://dataplane.edc-v.svc.cluster.local:8083/api/control/v1/dataflows") //todo: replace with config
+                .url("http://siglet.edc-v.svc.cluster.local:8081/api/v1/dataflows") //todo: replace with config
                 .build());
     }
 

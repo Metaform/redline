@@ -448,7 +448,6 @@ class ManagementApiClientIntegrationTest {
         // Arrange
         var dataplaneRegistration = DataplaneRegistration.Builder.aDataplaneRegistration()
                 .url("http://localhost:8080")
-                .allowedSourceTypes(List.of("HttpData"))
                 .allowedTransferTypes(List.of("HttpData-PULL"))
                 .build();
 
