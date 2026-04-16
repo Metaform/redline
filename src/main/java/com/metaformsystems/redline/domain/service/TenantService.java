@@ -288,10 +288,10 @@ public class TenantService {
 
         //todo: replace magic strings with parameters
         managementApiClient.prepareDataplane(participantContextId, DataplaneRegistration.Builder.aDataplaneRegistration()
-                .allowedSourceTypes(request.allowedSourceTypes())
+                .id(request.id().formatted(participantContextId))
                 .allowedTransferTypes(request.allowedTransferTypes())
-                .destinationProvisionTypes(request.destinationProvisionTypes())
-                .url(request.url())
+                .labels(request.allowedTransferTypes())
+                .url(request.url().formatted(participantContextId))
                 .build());
     }
 

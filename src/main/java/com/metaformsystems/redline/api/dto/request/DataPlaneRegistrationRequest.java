@@ -16,13 +16,12 @@ package com.metaformsystems.redline.api.dto.request;
 
 import java.util.List;
 
-public record DataPlaneRegistrationRequest(List<String> allowedSourceTypes, List<String> allowedTransferTypes,
-                                           List<String> destinationProvisionTypes, String url) {
+public record DataPlaneRegistrationRequest(String id, List<String> allowedTransferTypes, List<String> labels, String url) {
 
     public static DataPlaneRegistrationRequest ofDefault() {
-        return new DataPlaneRegistrationRequest(List.of("HttpData", "HttpCertData"),
+        return new DataPlaneRegistrationRequest("dataplane-%s",
                 List.of("HttpData-PULL"),
-                List.of("HttpData", "HttpCertData", "httpData", "httpCertData"),
-                "http://dataplane.edc-v.svc.cluster.local:8083/api/control/v1/dataflows");
+                List.of(),
+                "http://siglet.edc-v.svc.cluster.local:8081/api/v1/%s/dataflows");
     }
 }

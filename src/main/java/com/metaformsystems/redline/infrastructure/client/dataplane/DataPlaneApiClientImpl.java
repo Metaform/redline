@@ -103,7 +103,7 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
 
         Flux<DataBuffer> dataBufferFlux = dataPlanePublicClient.get()
                 .uri("/certs/" + fileId)
-                .header("Authorization", authToken)
+                .header("Authorization", "Bearer " + authToken)
                 .retrieve()
                 .bodyToFlux(DataBuffer.class);
 

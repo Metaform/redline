@@ -33,6 +33,7 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.NewPolic
 import com.metaformsystems.redline.infrastructure.client.management.dto.PolicySet;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferProcess;
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
+import com.metaformsystems.redline.infrastructure.client.siglet.SigletApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -67,11 +68,13 @@ public class DataAccessService {
     private final WebDidResolver webDidResolver;
     private final ParticipantRepository participantRepository;
     private final ManagementApiClient managementApiClient;
+    private final SigletApiClient sigletApiClient;
 
-    public DataAccessService(DataPlaneApiClient dataPlaneApiClient, WebDidResolver webDidResolver, ParticipantRepository participantRepository, ManagementApiClient managementApiClient) {
+    public DataAccessService(DataPlaneApiClient dataPlaneApiClient, WebDidResolver webDidResolver, ParticipantRepository participantRepository, ManagementApiClient managementApiClient, SigletApiClient sigletApiClient) {
         this.dataPlaneApiClient = dataPlaneApiClient;
         this.participantRepository = participantRepository;
         this.managementApiClient = managementApiClient;
+        this.sigletApiClient = sigletApiClient;
         this.catalogCache = new ConcurrentLruCache<>(100, key -> fetchCatalog(key.participantId(), key.did()));
         this.webDidResolver = webDidResolver;
     }
@@ -231,10 +234,14 @@ public class DataAccessService {
 
     @Transactional
     public TransferProcess getTransferProcess(Long participantId, String transferProcessId) {
-        var tp = managementApiClient.getTransferProcess(getContextId(participantId), transferProcessId);
+        var contextId = getContextId(participantId);
+        var tp = managementApiClient.getTransferProcess(contextId, transferProcessId);
         if ("STARTED".equals(tp.getState())) { //download EDR as well
-            var edr = managementApiClient.getEdr(getContextId(participantId), transferProcessId);
-            tp.setContentDataAddress(edr);
+            // TODO shim layer for old EDR format
+            var edr = sigletApiClient.getDataAddress(contextId, transferProcessId);
+            tp.setContentDataAddress(Map.of(
+                    "properties", Map.of("https://w3id.org/edc/v0.0.1/ns/authorization", edr.get("token"))
+            ));
         }
         return tp;
     }
