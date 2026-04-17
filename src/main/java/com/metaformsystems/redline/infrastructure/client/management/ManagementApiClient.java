@@ -16,6 +16,7 @@ package com.metaformsystems.redline.infrastructure.client.management;
 
 import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CatalogRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractAgreement;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
@@ -77,13 +78,10 @@ public interface ManagementApiClient {
     TransferProcess getTransferProcess(String participantContextId, String transferProcessId);
 
     // Catalog
-    Catalog getCatalog(String participantContextId, String counterPartyId);
+    Catalog getCatalog(String participantContextId, CatalogRequest request);
 
     // others
     void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration);
-
-    Object getData(String participantContextId, String counterPartyId, String offerId);
-
 
     List<ContractNegotiation> listContracts(String participantContextId);
 
