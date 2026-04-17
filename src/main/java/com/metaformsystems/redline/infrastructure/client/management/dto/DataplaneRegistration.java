@@ -18,29 +18,29 @@ import java.util.List;
 
 public class DataplaneRegistration {
     private String id;
-    private List<String> allowedTransferTypes;
-    private String url;
+    private List<String> transferTypes;
+    private String endpoint;
     private List<String> labels;
 
 
-    public List<String> getAllowedTransferTypes() {
-        return allowedTransferTypes;
+    public List<String> getTransferTypes() {
+        return transferTypes;
     }
 
-    public void setAllowedTransferTypes(List<String> allowedTransferTypes) {
-        this.allowedTransferTypes = allowedTransferTypes;
+    public void setTransferTypes(List<String> transferTypes) {
+        this.transferTypes = transferTypes;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getUrl() {
-        return url;
+    public String getEndpoint() {
+        return endpoint;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
     public List<String> getLabels() {
@@ -69,12 +69,12 @@ public class DataplaneRegistration {
         }
 
         public Builder allowedTransferTypes(List<String> allowedTransferTypes) {
-            dataplaneRegistration.setAllowedTransferTypes(allowedTransferTypes);
+            dataplaneRegistration.setTransferTypes(allowedTransferTypes);
             return this;
         }
 
         public Builder url(String url) {
-            dataplaneRegistration.setUrl(url);
+            dataplaneRegistration.setEndpoint(url);
             return this;
         }
 

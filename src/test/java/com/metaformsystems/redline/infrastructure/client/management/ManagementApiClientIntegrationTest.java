@@ -461,7 +461,7 @@ class ManagementApiClientIntegrationTest {
 
         // Assert
         var dataplaneRequest = mockWebServer.takeRequest();
-        assertThat(dataplaneRequest.getPath()).isEqualTo("/v5beta/dataplanes/" + participantContextId);
+        assertThat(dataplaneRequest.getPath()).isEqualTo("/v5beta/participants/%s/dataplanes".formatted(participantContextId));
         assertThat(dataplaneRequest.getHeader("Authorization")).isEqualTo("Bearer test-token");
     }
 
