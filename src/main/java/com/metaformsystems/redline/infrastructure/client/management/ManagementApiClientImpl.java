@@ -287,8 +287,8 @@ public class ManagementApiClientImpl implements ManagementApiClient {
 
     @Override
     public void prepareDataplane(String participantContextId, DataplaneRegistration dataplaneRegistration) {
-        controlPlaneWebClient.post()
-                .uri("/v5beta/dataplanes/%s".formatted(participantContextId))
+        controlPlaneWebClient.put()
+                .uri("/v5beta/participants/%s/dataplanes".formatted(participantContextId))
                 .header("Authorization", "Bearer %s".formatted(getToken(participantContextId)))
                 .bodyValue(dataplaneRegistration)
                 .retrieve()
