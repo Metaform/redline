@@ -24,6 +24,7 @@ import com.metaformsystems.redline.infrastructure.client.dataplane.DataPlaneApiC
 import com.metaformsystems.redline.infrastructure.client.management.ManagementApiClient;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CatalogRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractRequest;
@@ -253,7 +254,13 @@ public class DataAccessService {
     }
 
     private CacheableEntry<Catalog> fetchCatalog(String participantId, String did) {
-        return new CacheableEntry<>(managementApiClient.getCatalog(participantId, did), Instant.now());
+        var counterPartyAddress = webDidResolver.resolveProtocolEndpoints(did);
+        var request = CatalogRequest.Builder.newInstance()
+                .counterPartyId(did)
+                .counterPartyAddress(counterPartyAddress)
+                .build();
+
+        return new CacheableEntry<>(managementApiClient.getCatalog(participantId, request), Instant.now());
     }
 
     /**

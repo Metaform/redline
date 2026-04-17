@@ -22,6 +22,7 @@ import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Asset;
 import com.metaformsystems.redline.infrastructure.client.management.dto.Catalog;
+import com.metaformsystems.redline.infrastructure.client.management.dto.CatalogRequest;
 import com.metaformsystems.redline.infrastructure.client.management.dto.CelExpression;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractAgreement;
 import com.metaformsystems.redline.infrastructure.client.management.dto.ContractNegotiation;
@@ -274,11 +275,11 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     @Override
-    public Catalog getCatalog(String participantContextId, String counterPartyDid) {
+    public Catalog getCatalog(String participantContextId, CatalogRequest request) {
         return controlPlaneWebClient.post()
-                .uri("/v1alpha/participants/%s/catalog".formatted(participantContextId))
+                .uri("/v5beta/participants/%s/catalog/request".formatted(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
-                .bodyValue(Map.of("counterPartyDid", counterPartyDid))
+                .bodyValue(request)
                 .retrieve()
                 .bodyToMono(Catalog.class)
                 .block();
@@ -293,20 +294,6 @@ public class ManagementApiClientImpl implements ManagementApiClient {
                 .bodyValue(dataplaneRegistration)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .block();
-    }
-
-    @Override
-    public Object getData(String participantContextId, String counterPartyId, String policyId) {
-        return controlPlaneWebClient.post()
-                .uri("/v1alpha/participants/%s/data".formatted(participantContextId))
-                .header("Authorization", "Bearer " + getToken(participantContextId))
-                .bodyValue(Map.of(
-                        "providerId", counterPartyId,
-                        "policyId", policyId))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<>() {
-                })
                 .block();
     }
 
