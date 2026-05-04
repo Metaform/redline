@@ -21,6 +21,7 @@ public record VirtualParticipantAgent(Long id, Type type, DeploymentState state)
     public enum Type {
         CONTROL_PLANE,
         CREDENTIAL_SERVICE,
-        DATA_PLANE
+        DATA_PLANE,
+        ISSUER
     }
 }

@@ -58,7 +58,8 @@ public class VirtualParticipantAgent extends VersionedEntity {
     public enum VpaType {
         CONTROL_PLANE("cfm.connector"),
         CREDENTIAL_SERVICE("cfm.credentialservice"),
-        DATA_PLANE("cfm.dataplane");
+        DATA_PLANE("cfm.dataplane"),
+        ISSUER("cfm.issuer");
 
         private final String cfmName;
 

@@ -206,6 +206,13 @@ class TenantServiceIntegrationTest {
                                       "state": "pending",
                                       "type": "cfm.dataplane",
                                       "cellId": "621bbfd1-7e97-4934-93f1-86d19954c9b1"
+                                    },
+                                    {
+                                      "id": "1ebcd412-cb01-47ee-add6-95199acea06e",
+                                      "version": 0,
+                                      "state": "pending",
+                                      "type": "cfm.issuer",
+                                      "cellId": "621bbfd1-7e97-4934-93f1-86d19954c9b1"
                                     }
                             ]
                         }
@@ -220,10 +227,11 @@ class TenantServiceIntegrationTest {
 
         assertThat(result).isNotNull();
         assertThat(result.identifier()).isEqualTo("did:web:example.com:participant");
-        assertThat(result.agents()).hasSize(3);
+        assertThat(result.agents()).hasSize(4);
         assertThat(result.agents()).anyMatch(agent -> agent.type() == VirtualParticipantAgent.Type.CONTROL_PLANE);
         assertThat(result.agents()).anyMatch(agent -> agent.type() == VirtualParticipantAgent.Type.CREDENTIAL_SERVICE);
         assertThat(result.agents()).anyMatch(agent -> agent.type() == VirtualParticipantAgent.Type.DATA_PLANE);
+        assertThat(result.agents()).anyMatch(agent -> agent.type() == VirtualParticipantAgent.Type.ISSUER);
 
         // Verify database state
         var updatedTenant = tenantRepository.findById(tenant.id()).orElseThrow();
@@ -232,7 +240,7 @@ class TenantServiceIntegrationTest {
         var updatedParticipant = participantRepository.findById(participant.id()).orElseThrow();
         assertThatCode(() -> UUID.fromString(updatedParticipant.getCorrelationId())).doesNotThrowAnyException();
         assertThat(updatedParticipant.getIdentifier()).isEqualTo("did:web:example.com:participant");
-        assertThat(updatedParticipant.getAgents()).hasSize(3);
+        assertThat(updatedParticipant.getAgents()).hasSize(4);
     }
 
     @Test
@@ -468,10 +476,10 @@ class TenantServiceIntegrationTest {
 
 
         assertThat(result).hasSize(2);
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") 
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com")
                 && ref.nickname().equals("Partner One")
                 && ref.properties().equals(partner1Properties));
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") 
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com")
                 && ref.nickname().equals("Partner Two")
                 && ref.properties().equals(partner2Properties));
     }
@@ -498,11 +506,11 @@ class TenantServiceIntegrationTest {
 
 
         assertThat(result).hasSize(2);
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com") 
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner1.com")
                 && ref.nickname().equals("Partner One")
                 && ref.properties() != null
                 && ref.properties().isEmpty());
-        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com") 
+        assertThat(result).anyMatch(ref -> ref.identifier().equals("did:web:partner2.com")
                 && ref.nickname().equals("Partner Two")
                 && ref.properties() != null
                 && ref.properties().isEmpty());
@@ -730,7 +738,7 @@ class TenantServiceIntegrationTest {
     @Test
     void shouldGetParticipantDataspaces_whenParticipantNotFound() {
         // Test with non-existent participant ID
-        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> 
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
                 tenantService.getParticipantDataspaces(999L)))
                 .isInstanceOf(ObjectNotFoundException.class)
                 .hasMessageContaining("Participant not found with id: 999");
