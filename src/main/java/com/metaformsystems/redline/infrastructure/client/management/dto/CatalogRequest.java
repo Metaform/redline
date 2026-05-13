@@ -26,7 +26,7 @@ public class CatalogRequest {
     };
     @JsonProperty("@type")
     private final String type = "CatalogRequest";
-    private String protocol = "dataspace-protocol-http:2025-1";
+    private String protocol = "http-dsp-profile-2025-1";
     private String counterPartyAddress;
     private String counterPartyId;
 

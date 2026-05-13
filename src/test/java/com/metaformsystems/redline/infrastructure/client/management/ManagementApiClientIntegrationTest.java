@@ -330,7 +330,7 @@ class ManagementApiClientIntegrationTest {
         // Arrange
         var negotiationRequest = ContractRequest.Builder.aContractRequest()
                 .counterPartyAddress("http://provider.com/dsp")
-                .protocol("dataspace-protocol-http")
+                .protocol("http-dsp-profile-2025-1")
                 .providerId("provider-123")
                 .policy(Offer.Builder.anOffer()
                         .permission(List.of(Permission.Builder.aPermission().build()))
@@ -475,7 +475,7 @@ class ManagementApiClientIntegrationTest {
                             {
                                 "@type": "TransferProcess",
                                 "@id": "transfer-123",
-                                "protocol": "dataspace-protocol-http",
+                                "protocol": "http-dsp-profile-2025-1",
                                 "correlationId": "corr-123",
                                 "counterPartyAddress": "http://provider.com/dsp",
                                 "assetId": "asset-123",
@@ -497,7 +497,7 @@ class ManagementApiClientIntegrationTest {
         assertThat(result.getFirst().getCounterPartyAddress()).isEqualTo("http://provider.com/dsp");
         assertThat(result.getFirst().getAssetId()).isEqualTo("asset-123");
         assertThat(result.getFirst().getContractId()).isEqualTo("contract-123");
-        assertThat(result.getFirst().getProtocol()).isEqualTo("dataspace-protocol-http");
+        assertThat(result.getFirst().getProtocol()).isEqualTo("http-dsp-profile-2025-1");
         assertThat(result.getFirst().getTransferType()).isEqualTo("HttpData-PULL");
         assertThat(result.getFirst().getDataPlaneId()).isEqualTo("dataplane-1");
 
@@ -536,7 +536,7 @@ class ManagementApiClientIntegrationTest {
                             {
                                 "@type": "TransferProcess",
                                 "@id": "transfer-123",
-                                "protocol": "dataspace-protocol-http",
+                                "protocol": "http-dsp-profile-2025-1",
                                 "assetId": "asset-123",
                                 "contractId": "contract-123",
                                 "state": "STARTED"
@@ -544,7 +544,7 @@ class ManagementApiClientIntegrationTest {
                             {
                                 "@type": "TransferProcess",
                                 "@id": "transfer-456",
-                                "protocol": "dataspace-protocol-http",
+                                "protocol": "http-dsp-profile-2025-1",
                                 "assetId": "asset-456",
                                 "contractId": "contract-456",
                                 "state": "COMPLETED"
@@ -552,7 +552,7 @@ class ManagementApiClientIntegrationTest {
                             {
                                 "@type": "TransferProcess",
                                 "@id": "transfer-789",
-                                "protocol": "dataspace-protocol-http",
+                                "protocol": "http-dsp-profile-2025-1",
                                 "assetId": "asset-789",
                                 "contractId": "contract-789",
                                 "state": "TERMINATED"
