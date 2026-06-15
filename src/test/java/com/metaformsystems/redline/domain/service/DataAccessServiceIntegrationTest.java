@@ -84,7 +84,7 @@ class DataAccessServiceIntegrationTest {
     @Autowired
     private ServiceProviderRepository serviceProviderRepository;
     private ServiceProvider serviceProvider;
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     @MockitoBean
@@ -119,7 +119,7 @@ class DataAccessServiceIntegrationTest {
 
         mockWebServer = new MockWebServer();
         mockWebServer.start(InetAddress.getByName(mockBackEndHost), mockBackEndPort);
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("mock-token");
+        when(tokenProvider.getToken(anyString(), anyString())).thenReturn("mock-token");
     }
 
     @Test

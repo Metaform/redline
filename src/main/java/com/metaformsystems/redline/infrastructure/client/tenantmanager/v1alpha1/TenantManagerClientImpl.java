@@ -23,7 +23,7 @@ import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.Tenant;
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantCreationRequest;
 import com.metaformsystems.redline.infrastructure.client.tenantmanager.v1alpha1.dto.TenantPropertiesDiff;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -33,26 +33,22 @@ import java.util.List;
 @Component
 public class TenantManagerClientImpl implements TenantManagerClient {
 
+    public static final String TM_API_READ_SCOPE = "cfm-read";
+    public static final String TM_API_WRITE_SCOPE = "cfm-write";
     private static final String API_BASE = "/api/v1alpha1";
     private final WebClient webClient;
     private final TokenProvider tokenProvider;
-    private final String provisionerClientId;
-    private final String provisionerClientSecret;
 
-    public TenantManagerClientImpl(WebClient tenantManagerWebClient, TokenProvider tokenProvider,
-                                   @Value("${edc.api.clientId:provisioner}") String provisionerClientId,
-                                   @Value("${edc.api.clientsecret:provisioner-secret}") String provisionerClientSecret) {
+    public TenantManagerClientImpl(WebClient tenantManagerWebClient, @Qualifier("token-exchange") TokenProvider tokenProvider) {
         this.webClient = tenantManagerWebClient;
         this.tokenProvider = tokenProvider;
-        this.provisionerClientId = provisionerClientId;
-        this.provisionerClientSecret = provisionerClientSecret;
     }
 
     @Override
     public List<Cell> listCells() {
         return webClient.get()
                 .uri(API_BASE + "/cells")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Cell>>() {
                 })
@@ -63,7 +59,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public Cell createCell(CellCreationRequest cellCreationRequest) {
         return webClient.post()
                 .uri(API_BASE + "/cells")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .bodyValue(cellCreationRequest)
                 .retrieve()
                 .bodyToMono(Cell.class)
@@ -74,7 +70,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public List<DataspaceProfile> listDataspaceProfiles() {
         return webClient.get()
                 .uri(API_BASE + "/dataspace-profiles")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<DataspaceProfile>>() {
                 })
@@ -85,7 +81,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public DataspaceProfile getDataspaceProfile(String id) {
         return webClient.get()
                 .uri(API_BASE + "/dataspace-profiles/{id}", id)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(DataspaceProfile.class)
                 .block();
@@ -95,7 +91,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public void deployDataspaceProfile(String id) {
         webClient.post()
                 .uri(API_BASE + "/dataspace-profiles/{id}/deployments", id)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .retrieve()
                 .toBodilessEntity()
                 .block();
@@ -105,7 +101,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public List<ParticipantProfile> queryParticipantProfiles(ModelQuery query) {
         return webClient.post()
                 .uri(API_BASE + "/participant-profiles/query")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .bodyValue(query)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ParticipantProfile>>() {
@@ -117,7 +113,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public List<ParticipantProfile> listParticipantProfiles(String tenantId) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles", tenantId)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ParticipantProfile>>() {
                 })
@@ -128,7 +124,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public ParticipantProfile getParticipantProfile(String tenantId, String participantId) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles/{participantID}", tenantId, participantId)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(ParticipantProfile.class)
                 .block();
@@ -138,7 +134,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public ParticipantProfile deployParticipantProfile(String tenantId, ParticipantProfile profile) {
         return webClient.post()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles", tenantId)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .bodyValue(profile)
                 .retrieve()
                 .bodyToMono(ParticipantProfile.class)
@@ -149,7 +145,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public ParticipantProfile deleteParticipantProfile(String tenantId, String participantId) {
         return webClient.delete()
                 .uri(API_BASE + "/tenants/{id}/participant-profiles/{participantID}", tenantId, participantId)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .retrieve()
                 .bodyToMono(ParticipantProfile.class)
                 .block();
@@ -159,7 +155,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public List<Tenant> listTenants() {
         return webClient.get()
                 .uri(API_BASE + "/tenants")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Tenant>>() {
                 })
@@ -170,7 +166,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public Tenant getTenant(String id) {
         return webClient.get()
                 .uri(API_BASE + "/tenants/{id}", id)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .retrieve()
                 .bodyToMono(Tenant.class)
                 .block();
@@ -180,7 +176,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public Tenant createTenant(TenantCreationRequest newTenant) {
         return webClient.post()
                 .uri(API_BASE + "/tenants")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .bodyValue(newTenant)
                 .retrieve()
                 .bodyToMono(Tenant.class)
@@ -191,7 +187,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public Tenant updateTenant(String id, TenantPropertiesDiff diff) {
         return webClient.patch()
                 .uri(API_BASE + "/tenants/{id}", id)
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_WRITE_SCOPE))
                 .bodyValue(diff)
                 .retrieve()
                 .bodyToMono(Tenant.class)
@@ -202,7 +198,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
     public List<Tenant> queryTenants(ModelQuery query) {
         return webClient.post()
                 .uri(API_BASE + "/tenants/query")
-                .header("Authorization", "Bearer " + getToken())
+                .header("Authorization", "Bearer " + getToken(TM_API_READ_SCOPE))
                 .bodyValue(query)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Tenant>>() {
@@ -210,7 +206,7 @@ public class TenantManagerClientImpl implements TenantManagerClient {
                 .block();
     }
 
-    private String getToken() {
-        return tokenProvider.getToken(provisionerClientId, provisionerClientSecret, "tenant-manager-api:read");
+    private String getToken(String scope) {
+        return tokenProvider.getToken(null, scope);
     }
 }

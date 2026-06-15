@@ -19,6 +19,7 @@ import com.metaformsystems.redline.domain.exception.ObjectNotFoundException;
 import com.metaformsystems.redline.domain.repository.ParticipantRepository;
 import com.metaformsystems.redline.infrastructure.client.dataplane.dto.UploadResponse;
 import com.metaformsystems.redline.infrastructure.client.management.dto.QuerySpec;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -42,7 +43,8 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     private final ParticipantRepository participantRepository;
     private final TokenProvider tokenProvider;
 
-    public DataPlaneApiClientImpl(WebClient dataPlanePublicClient, WebClient dataPlaneInternalClient, ParticipantRepository participantRepository, TokenProvider tokenProvider) {
+    public DataPlaneApiClientImpl(WebClient dataPlanePublicClient, WebClient dataPlaneInternalClient, ParticipantRepository participantRepository,
+                                  @Qualifier("token-exchange") TokenProvider tokenProvider) {
         this.dataPlanePublicClient = dataPlanePublicClient.mutate()
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(50 * 1024 * 1024))
@@ -118,9 +120,8 @@ public class DataPlaneApiClientImpl implements DataPlaneApiClient {
     }
 
     private String getToken(String participantContextId) {
-        var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
+        participantRepository.findByParticipantContextId(participantContextId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with context id: " + participantContextId));
-
-        return tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
+        return tokenProvider.getToken(participantContextId, "read write");
     }
 }

@@ -85,7 +85,7 @@ class TenantServiceIntegrationTest {
     private ServiceProviderRepository serviceProviderRepository;
     private ServiceProvider serviceProvider;
     private Dataspace dataspace;
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     @MockitoBean
@@ -118,7 +118,7 @@ class TenantServiceIntegrationTest {
 
         mockWebServer = new MockWebServer();
         mockWebServer.start(InetAddress.getByName(mockBackEndHost), mockBackEndPort);
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("mock-token");
+        when(tokenProvider.getToken(anyString(), anyString())).thenReturn("mock-token");
     }
 
     @Test

@@ -23,6 +23,7 @@ import com.metaformsystems.redline.infrastructure.client.identityhub.dto.Identit
 import com.metaformsystems.redline.infrastructure.client.identityhub.dto.KeyDescriptor;
 import com.metaformsystems.redline.infrastructure.client.identityhub.dto.KeyPairResource;
 import com.metaformsystems.redline.infrastructure.client.identityhub.dto.VerifiableCredentialResource;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -43,7 +44,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     private final ParticipantRepository participantRepository;
 
     public IdentityHubClientImpl(WebClient identityHubWebClient,
-                                 TokenProvider tokenProvider,
+                                 @Qualifier("token-exchange") TokenProvider tokenProvider,
                                  ParticipantRepository participantRepository,
                                  @Value("${edc.api.clientId:provisioner}") String provisionerClientId,
                                  @Value("${edc.api.clientsecret:provisioner-secret}") String provisionerClientSecret) {
@@ -55,38 +56,12 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public List<IdentityHubParticipantContext> getAllParticipants() {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path(IDENTITY_API_BASE + "/participants")
-                        .build())
-                .header("Authorization", "Bearer " + getToken())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<IdentityHubParticipantContext>>() {
-                })
-                .block();
-    }
-
-    @Override
     public IdentityHubParticipantContext getParticipant(String participantContextId) {
         return webClient.get()
                 .uri(IDENTITY_API_BASE + "/participants/{participantContextId}", encode(participantContextId))
                 .header("Authorization", "Bearer " + getToken(participantContextId))
                 .retrieve()
                 .bodyToMono(IdentityHubParticipantContext.class)
-                .block();
-    }
-
-    @Override
-    public List<VerifiableCredentialResource> getAllCredentials() {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path(IDENTITY_API_BASE + "/credentials")
-                        .build())
-                .header("Authorization", "Bearer " + getToken())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<VerifiableCredentialResource>>() {
-                })
                 .block();
     }
 
@@ -126,19 +101,6 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .bodyValue(request)
                 .retrieve()
                 .toBodilessEntity()
-                .block();
-    }
-
-    @Override
-    public List<KeyPairResource> getAllKeyPairs() {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path(IDENTITY_API_BASE + "/keypairs")
-                        .build())
-                .header("Authorization", "Bearer " + getToken())
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<KeyPairResource>>() {
-                })
                 .block();
     }
 
@@ -221,15 +183,10 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .block();
     }
 
-    private String getToken() {
-        return tokenProvider.getToken(provisionerClientId, provisionerClientSecret, "identity-api:read");
-    }
-
     private String getToken(String participantContextId) {
-        var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
+        participantRepository.findByParticipantContextId(participantContextId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with context id: " + participantContextId));
 
-        var token = tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "identity-api:write identity-api:read");
-        return token;
+        return tokenProvider.getToken(participantContextId, "read write");
     }
 }

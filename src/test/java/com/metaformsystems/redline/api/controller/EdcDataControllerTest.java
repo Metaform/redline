@@ -98,7 +98,7 @@ public class EdcDataControllerTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     private ServiceProvider serviceProvider;
@@ -111,7 +111,6 @@ public class EdcDataControllerTest {
         registry.add("dataplane.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("dataplane.internal.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("controlplane.url", () -> "http://%s:%s/controlplane".formatted(mockBackEndHost, mockBackEndPort));
-
     }
 
     @AfterEach
@@ -134,7 +133,7 @@ public class EdcDataControllerTest {
 
         mockWebServer = new MockWebServer();
         mockWebServer.start(InetAddress.getByName(mockBackEndHost), mockBackEndPort);
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
+        when(tokenProvider.getToken(anyString(), anyString())).thenReturn("test-token");
         when(webDidResolver.resolveProtocolEndpoints(anyString())).thenReturn("http://example.com/api");
     }
 

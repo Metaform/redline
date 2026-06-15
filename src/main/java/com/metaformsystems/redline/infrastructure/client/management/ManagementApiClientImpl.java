@@ -35,6 +35,7 @@ import com.metaformsystems.redline.infrastructure.client.management.dto.Transfer
 import com.metaformsystems.redline.infrastructure.client.management.dto.TransferRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
@@ -57,7 +58,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     private final ClientCredentials provisionerCredentials;
 
     public ManagementApiClientImpl(WebClient controlPlaneWebClient,
-                                   TokenProvider tokenProvider,
+                                   @Qualifier("token-exchange") TokenProvider tokenProvider,
                                    ParticipantRepository participantRepository,
                                    ObjectMapper objectMapper,
                                    @Value("${edc.api.clientId:provisioner}") String adminClientId,
@@ -215,7 +216,7 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     @Override
     public void createCelExpression(CelExpression celExpression) {
 
-        var token = tokenProvider.getToken(provisionerCredentials.clientId(), provisionerCredentials.clientSecret(), "management-api:write management-api:read");
+        var token = tokenProvider.getToken(null, "management-api:write management-api:read");
         controlPlaneWebClient.post()
                 .uri("/v5beta/celexpressions")
                 .header("Authorization", "Bearer %s".formatted(token))
@@ -320,10 +321,10 @@ public class ManagementApiClientImpl implements ManagementApiClient {
     }
 
     private String getToken(String participantContextId) {
-        var participantProfile = participantRepository.findByParticipantContextId(participantContextId)
+        participantRepository.findByParticipantContextId(participantContextId)
                 .orElseThrow(() -> new ObjectNotFoundException("Participant not found with context id: " + participantContextId));
 
-        return tokenProvider.getToken(participantProfile.getClientCredentials().clientId(), participantProfile.getClientCredentials().clientSecret(), "management-api:write management-api:read");
+        return tokenProvider.getToken(participantContextId, "read write");
     }
 
 }

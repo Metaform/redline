@@ -37,6 +37,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,10 +59,10 @@ class TenantManagerClientImplTest {
                 .baseUrl(mockWebServer.url("/").toString())
                 .build();
 
-        when(tokenProvider.getToken("provisioner", "provisioner-secret", "identity-api:read"))
+        when(tokenProvider.getToken(anyString(), eq("identity-api:read")))
                 .thenReturn(TEST_TOKEN);
 
-        tenantManagerClient = new TenantManagerClientImpl(webClient, tokenProvider, "provisioner", "provisioner-secret");
+        tenantManagerClient = new TenantManagerClientImpl(webClient, tokenProvider);
     }
 
     @AfterEach
