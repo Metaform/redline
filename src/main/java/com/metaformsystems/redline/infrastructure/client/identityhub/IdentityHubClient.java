@@ -28,22 +28,14 @@ import java.util.List;
  */
 public interface IdentityHubClient {
 
-    // Participant Context operations
-    List<IdentityHubParticipantContext> getAllParticipants();
 
     IdentityHubParticipantContext getParticipant(String participantContextId);
-
-    // Verifiable Credentials operations
-    List<VerifiableCredentialResource> getAllCredentials();
 
     List<VerifiableCredentialResource> queryCredentialsByType(String participantContextId, String type);
 
     VerifiableCredentialResource getCredentialRequest(String participantContextId, String holderPid);
 
     void requestCredential(String participantContextId, CredentialRequestDto request);
-
-    // Key Pairs operations
-    List<KeyPairResource> getAllKeyPairs();
 
     List<KeyPairResource> queryKeyPairByParticipantContextId(String participantContextId);
 

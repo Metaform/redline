@@ -51,6 +51,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -67,7 +69,7 @@ class ManagementApiClientIntegrationTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     private Participant participant;
@@ -96,10 +98,10 @@ class ManagementApiClientIntegrationTest {
 
         mockWebServer = new MockWebServer();
         mockWebServer.start(InetAddress.getByName(mockBackEndHost), mockBackEndPort);
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("mock-token");
+        when(tokenProvider.getToken(eq(participantContextId), anyString())).thenReturn("mock-token");
 
         // Mock token provider to return a test token
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
+        when(tokenProvider.getToken(eq(participantContextId), anyString())).thenReturn("test-token");
     }
 
     @Test
@@ -427,6 +429,8 @@ class ManagementApiClientIntegrationTest {
                 .description("Test expression")
                 .scopes(Set.of("scope1", "scope2"))
                 .build();
+
+        when(tokenProvider.getToken(isNull(), anyString())).thenReturn("test-token");
 
         // Mock CEL expression creation response
         mockWebServer.enqueue(new MockResponse()

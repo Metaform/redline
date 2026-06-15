@@ -51,7 +51,7 @@ class DataPlaneApiClientIntegrationTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     private String participantContextId;
@@ -81,7 +81,7 @@ class DataPlaneApiClientIntegrationTest {
         participantRepository.save(participant);
 
         // Mock token provider to return a test token
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
+        when(tokenProvider.getToken(anyString(), anyString())).thenReturn("test-token");
     }
 
     @Test

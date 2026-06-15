@@ -15,5 +15,5 @@
 package com.metaformsystems.redline.application.service;
 
 public interface TokenProvider {
-    String getToken(String clientId, String clientSecret, String scopes);
+    String getToken(String participantContextId, String scopes);
 }

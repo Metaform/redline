@@ -44,6 +44,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -80,9 +82,9 @@ class IdentityHubClientImplTest {
                 ADMIN_CLIENT_SECRET
         );
 
-        when(tokenProvider.getToken(ADMIN_CLIENT_ID, ADMIN_CLIENT_SECRET, "identity-api:read"))
+        when(tokenProvider.getToken(anyString(), eq("identity-api:read")))
                 .thenReturn(TEST_TOKEN);
-        when(tokenProvider.getToken(CLIENT_ID, CLIENT_SECRET, "identity-api:write identity-api:read"))
+        when(tokenProvider.getToken(anyString(), eq("identity-api:write identity-api:read")))
                 .thenReturn(TEST_TOKEN);
     }
 
@@ -91,58 +93,6 @@ class IdentityHubClientImplTest {
         if (mockWebServer != null) {
             mockWebServer.shutdown();
         }
-    }
-
-    @Test
-    @DisplayName("should get all participants successfully")
-    void getAllParticipants_success() {
-
-        var responseBody = """
-                [
-                    {
-                        "id": "p1",
-                        "participantContextId": "context-1",
-                        "did": "did:example:123",
-                        "apiTokenAlias": "token-alias",
-                        "roles": ["role1"],
-                        "properties": {},
-                        "state": 1,
-                        "createdAt": 1234567890,
-                        "lastModified": 1234567890
-                    }
-                ]
-                """;
-
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody(responseBody));
-
-
-        var result = identityHubClient.getAllParticipants();
-
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("context-1", result.getFirst().participantContextId());
-    }
-
-    @Test
-    @DisplayName("should return empty list when no participants exist")
-    void getAllParticipants_empty() {
-
-        var responseBody = "[]";
-
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody(responseBody));
-
-
-        var result = identityHubClient.getAllParticipants();
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
     }
 
 
@@ -194,52 +144,6 @@ class IdentityHubClientImplTest {
             identityHubClient.getParticipant(PARTICIPANT_CONTEXT_ID);
         });
     }
-
-    @Test
-    @DisplayName("should get all credentials successfully")
-    void getAllCredentials_success() {
-
-        var responseBody = """
-                [
-                    {
-                        "id": "cred-1",
-                        "credential": "eyJhbGciOiJFZERTQSJ9..."
-                    }
-                ]
-                """;
-
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody(responseBody));
-
-
-        var result = identityHubClient.getAllCredentials();
-
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    @DisplayName("should return empty list when no credentials exist")
-    void getAllCredentials_empty() {
-
-        var responseBody = "[]";
-
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody(responseBody));
-
-
-        var result = identityHubClient.getAllCredentials();
-
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
 
     @Test
     @DisplayName("should query credentials by type successfully")
@@ -352,34 +256,6 @@ class IdentityHubClientImplTest {
         assertNotNull(recordedRequest);
         assertEquals("POST", recordedRequest.getMethod());
     }
-
-
-    @Test
-    @DisplayName("should get all key pairs successfully")
-    void getAllKeyPairs_success() {
-
-        var responseBody = """
-                [
-                    {
-                        "keyId": "key-1",
-                        "publicKeyPem": "-----BEGIN PUBLIC KEY-----..."
-                    }
-                ]
-                """;
-
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody(responseBody));
-
-
-        var result = identityHubClient.getAllKeyPairs();
-
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-
 
     @Test
     @DisplayName("should query key pairs by participant context id successfully")

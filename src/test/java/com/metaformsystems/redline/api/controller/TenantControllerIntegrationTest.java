@@ -94,20 +94,19 @@ class TenantControllerIntegrationTest {
     @Autowired
     private ParticipantRepository participantRepository;
 
-    @MockitoBean
+    @MockitoBean("token-exchange")
     private TokenProvider tokenProvider;
 
     private com.metaformsystems.redline.domain.entity.ServiceProvider serviceProvider;
     private Dataspace dataspace;
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) throws IOException {
+    static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("tenant-manager.url", () -> "http://%s:%s".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("vault.url", () -> "http://%s:%s/vault".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("dataplane.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("dataplane.internal.url", () -> "http://%s:%s/dataplane".formatted(mockBackEndHost, mockBackEndPort));
         registry.add("controlplane.url", () -> "http://%s:%s/controlplane".formatted(mockBackEndHost, mockBackEndPort));
-
     }
 
     @AfterEach
@@ -130,7 +129,7 @@ class TenantControllerIntegrationTest {
 
         mockWebServer = new MockWebServer();
         mockWebServer.start(InetAddress.getByName(mockBackEndHost), mockBackEndPort);
-        when(tokenProvider.getToken(anyString(), anyString(), anyString())).thenReturn("test-token");
+        when(tokenProvider.getToken(anyString(), anyString())).thenReturn("test-token");
         when(webDidResolver.resolveProtocolEndpoints(anyString())).thenReturn("http://example.com/api");
     }
 
@@ -426,12 +425,12 @@ class TenantControllerIntegrationTest {
         var participant = new Participant();
         participant.setIdentifier("Test Participant");
         participant.setTenant(tenant);
-        
+
         // Add dataspace info to participant
         var dataspaceInfo = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
         dataspaceInfo.setDataspaceId(dataspace.getId());
         participant.getDataspaceInfos().add(dataspaceInfo);
-        
+
         tenant.addParticipant(participant);
         participant = participantRepository.save(participant);
 
@@ -459,17 +458,17 @@ class TenantControllerIntegrationTest {
         var participant = new Participant();
         participant.setIdentifier("Test Participant");
         participant.setTenant(tenant);
-        
+
         // Add first dataspace info
         var dataspaceInfo1 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
         dataspaceInfo1.setDataspaceId(dataspace.getId());
         participant.getDataspaceInfos().add(dataspaceInfo1);
-        
+
         // Add second dataspace info
         var dataspaceInfo2 = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
         dataspaceInfo2.setDataspaceId(dataspace2.getId());
         participant.getDataspaceInfos().add(dataspaceInfo2);
-        
+
         tenant.addParticipant(participant);
         participant = participantRepository.save(participant);
 
@@ -492,12 +491,12 @@ class TenantControllerIntegrationTest {
         var participant = new Participant();
         participant.setIdentifier("Test Participant");
         participant.setTenant(tenant);
-        
+
         // Add dataspace info to participant
         var dataspaceInfo = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
         dataspaceInfo.setDataspaceId(dataspace.getId());
         participant.getDataspaceInfos().add(dataspaceInfo);
-        
+
         tenant.addParticipant(participant);
         participant = participantRepository.save(participant);
 
@@ -531,11 +530,11 @@ class TenantControllerIntegrationTest {
         var participant = new Participant();
         participant.setIdentifier("Test Participant");
         participant.setTenant(tenant);
-        
+
         var dataspaceInfo = new com.metaformsystems.redline.domain.entity.DataspaceInfo();
         dataspaceInfo.setDataspaceId(dataspace.getId());
         participant.getDataspaceInfos().add(dataspaceInfo);
-        
+
         tenant.addParticipant(participant);
         participant = participantRepository.save(participant);
 
