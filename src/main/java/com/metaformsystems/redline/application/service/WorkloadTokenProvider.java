@@ -56,6 +56,7 @@ public class WorkloadTokenProvider implements TokenProvider {
             var tokenContent = Files.readString(Path.of(tokenFilePath));
 
             var response = webClient.post()
+                    .uri("/token")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters.fromFormData("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
                             .with("subject_token", tokenContent)

@@ -21,7 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class TokenExchangeConfig {
-    @Value("${token.exchange.url:http://localhost:8080/token}")
+    @Value("${token.exchange.url:http://localhost:8080}")
     private String tokenExchangeUrl;
 
     @Bean
