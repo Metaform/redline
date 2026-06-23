@@ -76,7 +76,7 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-requested-with"));
 
         var source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/ui/**", config);
+        source.registerCorsConfiguration("/api/**", config);
         return source;
     }
 
