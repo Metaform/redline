@@ -70,8 +70,8 @@ public class SecurityConfig {
         //@Profile("dev")
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins}") List<String> allowedOrigins,
-            @Value("${app.cors.allowed-methods:GET,POST,PUT,PATCH,DELETE,OPTIONS}") List<String> allowedMethods,
-            @Value("${app.cors.allowed-headers:Authorization,Content-Type,x-requested-with}") List<String> allowedHeaders) {
+            @Value("${app.cors.allowed-methods}") List<String> allowedMethods,
+            @Value("${app.cors.allowed-headers}") List<String> allowedHeaders) {
 
         var config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
