@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -605,7 +606,8 @@ class TenantManagerClientImplTest {
                 null,
                 new HashMap<>(),
                 new HashMap<>(),
-                List.of()
+                List.of(),
+                Map.of("cfm.issuer", Map.of("id", "did:example:123"))
         );
     }
 

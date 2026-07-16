@@ -45,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -145,8 +146,16 @@ public class TenantService {
         }
 
         // invoke CFM to deploy the ParticipantProfile and update the internal Participant entity with correlation id, identifier, and VPAs
+        var now = Instant.now().toString();
         var tmProfile = tenantManagerClient.deployParticipantProfile(tenant.getCorrelationId(), new ParticipantProfile(
-                UUID.randomUUID().toString(), 0L, deployment.identifier(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList()
+                UUID.randomUUID().toString(), 0L, deployment.identifier(), tenant.getCorrelationId(), false, null, Map.of(), Map.of(), Collections.emptyList(),
+                Map.of("cfm.issuer", Map.of("id", deployment.identifier(),
+                        "membership", Map.of("since", now),
+                        "membershipType", "full-member",
+                        "membershipStartDate", now,
+                        "contractVersion", "1.0.0",
+                        "component_types", "all",
+                        "since", now))
         ));
         participant.setCorrelationId(tmProfile.id());
         participant.setIdentifier(tmProfile.identifier());

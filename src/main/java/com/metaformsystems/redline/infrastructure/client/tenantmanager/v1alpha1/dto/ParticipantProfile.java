@@ -26,6 +26,7 @@ public record ParticipantProfile(
         String errorDetail,
         Map<String, List<String>> participantRoles,
         Map<String, Object> properties,
-        List<VirtualParticipantAgent> vpas
+        List<VirtualParticipantAgent> vpas,
+        Map<String, Object> vpaProperties
 ) {
 }
