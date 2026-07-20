@@ -25,3 +25,5 @@ spring:
 app:
   cors:
     allowed-origins: "*"
+    allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+    allowed-headers: Authorization,Content-Type,x-requested-with
