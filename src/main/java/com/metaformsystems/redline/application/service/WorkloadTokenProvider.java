@@ -60,6 +60,7 @@ public class WorkloadTokenProvider implements TokenProvider {
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters.fromFormData("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
                             .with("subject_token", tokenContent)
+                            .with("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
                             .with("audience", tokenExchangeAudience)
                             .with("resource", ofNullable(resource).orElse(defaultResource))
                             .with("scope", scopes))
